@@ -4,7 +4,7 @@ import (
 	"log"
 	apis "vehix/apis/auth"
 	rentals "vehix/apis/rentals"
-	users "vehix/apis/users"
+	users "vehix/apis/user"
 	vehicles "vehix/apis/vehicles"
 	"vehix/core/database"
 	"vehix/core/middleware"
@@ -18,12 +18,13 @@ func main() {
 
 	db := database.Connect()
 	db.AutoMigrate(
-		&models.User{},
-		&models.Vehicle{},
-		&models.Rental{},
+		&models.UserModel{},
+		&models.VehicleModel{},
+		&models.RentalModel{},
 	)
 
 	authService := service.NewAuthService(db)
+	userService := service.NewUserService(db)
 
 	app := fiber.New()
 
@@ -37,38 +38,35 @@ func main() {
 	auth.Post("/refresh", apis.RefreshTokenHandler(authService)) // POST /v1/auth/refresh - Refresh Token
 	// auth.Post("/logout", apis.LogoutHandler(userService))        // POST /v1/auth/logout - Logout
 
-	v1.Use(middleware.Middleware)
+	// Protected routes
+	v1.Use(middleware.Middleware(authService))
 	/*
 		=================================================================
 		USER HANDLERS
 		=================================================================
 	*/
-
-	v1.Get("/users", users.GetAllUsersHandler)                 // GET /api/v1/users - Get users
-	v1.Get("/users/:id", users.GetUserByIDHandler)             // GET /api/v1/users/:userID - Get user details
-	v1.Patch("/users/:id", users.UpdateUserHandler)            // PATCH /api/v1/users/:userID - Update user details
-	v1.Delete("/users/:id", users.DeleteUserHandler)           // DELETE /api/v1/users/:userID - Delete user details
-	v1.Get("/users/:id/rentals", rentals.GetAllRentalsHandler) // GET /api/v1/users/:userID/rentals - Get rentals by user
+	v1.Get("/me", users.GetUserByIDHandler(userService)) // GET 	/v1/me - Get user details
+	v1.Patch("/me", users.UpdateUserHandler)             // PATCH 	/v1/me - Update user details
+	v1.Delete("/me", users.DeleteUserHandler)            // DELETE 	/v1/me - Delete user details
+	v1.Get("/me/rentals", rentals.GetAllRentalsHandler)  // GET 	/v1/me/rentals - Get rentals by user
 
 	/*
 		=================================================================
 		VEHICLE HANDLERS
 		=================================================================
 	*/
-
-	v1.Get("/vehicles", vehicles.GetAllVehiclesHandler)       // GET /api/v1/vehicles/ - Get vehicles
-	v1.Post("/vehicles", vehicles.PostVehiclesHandler)        // POST /api/v1/vehicles/ - Create a new vehicle entry
-	v1.Get("/vehicles/:id", vehicles.GetVehicleByIDHandler)   // GET /api/v1/vehicles/:vehicleID - Get vehicle details
-	v1.Patch("/vehicles/:id", vehicles.UpdateVehicleHandler)  // PATCH /api/v1/vehicles/:vehicleID- Update vehicle details
+	v1.Get("/vehicles", vehicles.GetAllVehiclesHandler)       // GET 	/api/v1/vehicles/ - Get vehicles
+	v1.Post("/vehicles", vehicles.PostVehiclesHandler)        // POST 	/api/v1/vehicles/ - Create a new vehicle entry
+	v1.Get("/vehicles/:id", vehicles.GetVehicleByIDHandler)   // GET 	/api/v1/vehicles/:vehicleID - Get vehicle details
+	v1.Patch("/vehicles/:id", vehicles.UpdateVehicleHandler)  // PATCH 	/api/v1/vehicles/:vehicleID- Update vehicle details
 	v1.Delete("/vehicles/:id", vehicles.DeleteVehicleHandler) // DELETE /api/v1/vehicles/:vehicleID - Delete vehicle details
-	v1.Get("/users/:id", rentals.GetAllRentalsHandler)        // GET /api/v1/vehicles/:vehicleID/rentals - Get rentals by vehicle
+	v1.Get("/users/:id", rentals.GetAllRentalsHandler)        // GET 	/api/v1/vehicles/:vehicleID/rentals - Get rentals by vehicle
 
 	/*
 		=================================================================
 		RENTALS HANDLERS
 		=================================================================
 	*/
-
 	v1.Get("/rentals", rentals.GetAllRentalsHandler)        // GET /api/v1/rentals/ - Get rentals
 	v1.Post("/rentals", rentals.PostRentalHandler)          // POST /api/v1/rentals/ - Create a new rental
 	v1.Get("/rentals/:id", rentals.GetRentalByIDHandler)    // GET /api/v1/rentals/:rentalID - Get rental details

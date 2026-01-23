@@ -1,5 +1,7 @@
 package models
 
+import "github.com/google/uuid"
+
 // Common Responses
 
 type SuccessResponse struct {
@@ -37,4 +39,12 @@ type RegisterUserPayload struct {
 type LoginUserPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type UserResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"username"`
+	Email     string    `json:"email"`
+	CreatedAt string    `json:"created_at"`
+	UpdatedAt string    `json:"updated_at"`
 }

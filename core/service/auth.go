@@ -47,20 +47,20 @@ func NewAuthService(db *gorm.DB) AuthService {
 func (s *AuthServiceImpl) Register(ctx context.Context, payload models.RegisterUserPayload) (int, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	var existingUser models.User
+	var existingUser models.UserModel
 	err := db.Where("email = ?", payload.Email).First(&existingUser).Error
 	if err == nil {
 		return fiber.StatusConflict, &models.ErrorResponse{
 			MessageID: messages.ERR_USER_ALREADY_EXISTS.Code,
 			Message:   messages.ERR_USER_ALREADY_EXISTS.Text,
 		}
-	}
-
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return fiber.StatusNotFound, &models.ErrorResponse{
-			MessageID: messages.ERR_USER_NOT_FOUND.Code,
-			Message:   messages.ERR_USER_NOT_FOUND.Text,
-			Exception: err.Error(),
+	} else {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.StatusNotFound, &models.ErrorResponse{
+				MessageID: messages.ERR_USER_NOT_FOUND.Code,
+				Message:   messages.ERR_USER_NOT_FOUND.Text,
+				Exception: err.Error(),
+			}
 		}
 	}
 
@@ -73,7 +73,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, payload models.RegisterU
 		}
 	}
 
-	user := models.User{
+	user := models.UserModel{
 		Name:     payload.Name,
 		Email:    payload.Email,
 		Password: string(hashedPassword),
@@ -93,7 +93,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, payload models.RegisterU
 func (s *AuthServiceImpl) Login(ctx context.Context, payload models.LoginUserPayload) (int, *models.LoginSuccess, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	var user models.User
+	var user models.UserModel
 	if err := db.Where("email = ?", payload.Email).Find(&user).Error; err != nil {
 		return fiber.StatusNotFound, nil, &models.ErrorResponse{
 			MessageID: messages.ERR_USER_NOT_FOUND.Code,

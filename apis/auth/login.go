@@ -34,7 +34,9 @@ func LoginHandler(authSvc auth.AuthService) fiber.Handler {
 			return throwLoginHandlerError(ctx, statusCode, errResp)
 		}
 
-		logger.Info(fmt.Sprintf("[%s] %s", messages.INFO_USER_LOGIN_SUCCESS.Code, messages.INFO_USER_LOGIN_SUCCESS.Text))
+		logger.Info(
+			fmt.Sprintf("[%s] %s", messages.INFO_USER_LOGIN_SUCCESS.Code,
+				messages.INFO_USER_LOGIN_SUCCESS.Text))
 		return ctx.Status(statusCode).JSON(tokenPayload)
 	}
 }

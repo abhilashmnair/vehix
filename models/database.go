@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct {
+type UserModel struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Name      string    `gorm:"type:varchar(255);not null"`
 	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null"`
@@ -15,14 +15,14 @@ type User struct {
 	UpdatedAt time.Time
 }
 
-type Vehicle struct {
+type VehicleModel struct {
 	ID    uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Make  string    `gorm:"type:varchar(255);not null"`
 	Model string    `gorm:"type:varchar(255);not null"`
 	Year  int       `gorm:"type:integer;not null"`
 }
 
-type Rental struct {
+type RentalModel struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	UserID    uuid.UUID `gorm:"type:uuid;not null"`
 	VehicleID uuid.UUID `gorm:"type:uuid;not null"`
