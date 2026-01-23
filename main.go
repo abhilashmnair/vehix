@@ -17,11 +17,14 @@ import (
 func main() {
 
 	db := database.Connect()
-	db.AutoMigrate(
+	err := db.AutoMigrate(
 		&models.UserModel{},
 		&models.VehicleModel{},
 		&models.RentalModel{},
 	)
+	if err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
 
 	authService := service.NewAuthService(db)
 	userService := service.NewUserService(db)
