@@ -13,11 +13,23 @@ var (
 	ERR_BAD_REQUEST      = Message{Code: "SYS005E", Text: "Bad Request"}
 )
 
+// Auth Messages
+var (
+	INFO_REFRESH_TOKEN_SUCCESS = Message{Code: "AUTH001I", Text: "Generated refresh token successfully"}
+	ERR_INVALID_REFRESH_TOKEN  = Message{Code: "AUTH002E", Text: "Refresh token invalid or expired"}
+
+	INFO_ACCESS_TOKEN_SUCCESS = Message{Code: "AUTH003I", Text: "Generated access token successfully"}
+	ERR_INVALID_ACCESS_TOKEN  = Message{Code: "AUTH004E", Text: "Access token invalid or expired"}
+)
+
 // User Messages
 var (
 	INFO_USER_REGISTER_SUCCESS = Message{Code: "USR001I", Text: "User registered successfully"}
-	INFO_USER_LOGIN_SUCCESS    = Message{Code: "USR002I", Text: "Auth token retrieved successfully"}
-	ERR_USER_ALREADY_EXISTS    = Message{Code: "USR003E", Text: "Email already in use"}
-	ERR_USER_NOT_FOUND         = Message{Code: "USR004E", Text: "User not found"}
-	ERR_INVALID_CREDENTIALS    = Message{Code: "USR005E", Text: "Invalid email or password"}
+	ERR_INVALID_CREDENTIALS    = Message{Code: "USR002E", Text: "Invalid email or password"}
+
+	INFO_USER_LOGIN_SUCCESS = Message{Code: "USR003I", Text: "Login successful"}
+	ERR_USER_LOGIN_FAILED   = Message{Code: "USR004E", Text: "Login failed"}
+
+	ERR_USER_ALREADY_EXISTS = Message{Code: "USR005E", Text: "Email already in use"}
+	ERR_USER_NOT_FOUND      = Message{Code: "USR006E", Text: "User not found"}
 )

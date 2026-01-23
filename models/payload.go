@@ -1,9 +1,5 @@
 package models
 
-import (
-	"github.com/google/uuid"
-)
-
 // Common Responses
 
 type SuccessResponse struct {
@@ -17,16 +13,28 @@ type ErrorResponse struct {
 	Exception string `json:"exception,omitempty"`
 }
 
+// Auth Payload
+
+type LoginSuccess struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 // User Payload
 
-type CreateUserPayload struct {
+type RegisterUserPayload struct {
 	Name     string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type UserResponse struct {
-	ID    uuid.UUID `json:"id"`
-	Name  string    `json:"username"`
-	Email string    `json:"email"`
+type LoginUserPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }

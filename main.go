@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	apis "vehix/apis/auth"
 	rentals "vehix/apis/rentals"
 	users "vehix/apis/users"
@@ -9,7 +10,6 @@ import (
 	"vehix/core/middleware"
 	"vehix/core/service"
 	"vehix/models"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -23,17 +23,21 @@ func main() {
 		&models.Rental{},
 	)
 
-	userService := service.NewUserService(db)
+	authService := service.NewAuthService(db)
 
 	app := fiber.New()
 
-	// Public Endpoint
-	app.Post("/register", apis.Register(userService)) // POST /api/v1/users - Register/Sign Up
-	app.Post("/login", apis.Register(userService))    // POST /api/v1/users - Login
-
 	// API v1 group with middleware
-	v1 := app.Group("/v1", middleware.Middleware)
+	v1 := app.Group("/v1")
 
+	// Auth Endpoints
+	auth := v1.Group("/auth")
+	auth.Post("/register", apis.RegisterHandler(authService))    // POST /v1/auth/register - Register/Sign Up
+	auth.Post("/login", apis.LoginHandler(authService))          // POST /v1/auth/login - Login
+	auth.Post("/refresh", apis.RefreshTokenHandler(authService)) // POST /v1/auth/refresh - Refresh Token
+	// auth.Post("/logout", apis.LogoutHandler(userService))        // POST /v1/auth/logout - Logout
+
+	v1.Use(middleware.Middleware)
 	/*
 		=================================================================
 		USER HANDLERS
