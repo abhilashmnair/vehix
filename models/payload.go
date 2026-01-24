@@ -41,6 +41,12 @@ type LoginUserPayload struct {
 	Password string `json:"password"`
 }
 
+type UpdateUserPayload struct {
+	Name     *string `json:"username,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Password *string `json:"password,omitempty"`
+}
+
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"username"`

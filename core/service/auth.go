@@ -59,7 +59,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, payload models.RegisterU
 			return fiber.StatusNotFound, &models.ErrorResponse{
 				MessageID: messages.ERR_USER_NOT_FOUND.Code,
 				Message:   messages.ERR_USER_NOT_FOUND.Text,
-				Exception: err.Error(),
+				Exception: "user not found",
 			}
 		}
 	}
@@ -98,7 +98,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, payload models.LoginUserPay
 		return fiber.StatusNotFound, nil, &models.ErrorResponse{
 			MessageID: messages.ERR_USER_NOT_FOUND.Code,
 			Message:   messages.ERR_USER_NOT_FOUND.Text,
-			Exception: err.Error(),
+			Exception: "user not found",
 		}
 	}
 

@@ -10,14 +10,21 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func GetUserByIDHandler(userSvc user.UserService) fiber.Handler {
+func GetUserHandler(userSvc user.UserService) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
-		userID := ctx.Locals("userID").(string)
+		userID, ok := ctx.Locals("userID").(string)
+		if !ok || userID == "" {
+			return throwGetUserHandlerError(ctx, fiber.StatusUnauthorized, &models.ErrorResponse{
+				MessageID: messages.ERR_UNAUTHORIZED.Code,
+				Message:   messages.ERR_UNAUTHORIZED.Text,
+				Exception: "userID not found in context",
+			})
+		}
 
 		statusCode, userResp, errResp := userSvc.GetUser(ctx.Context(), userID)
 		if errResp != nil {
-			return throwGetUserByIDHandlerError(ctx, statusCode, errResp)
+			return throwGetUserHandlerError(ctx, statusCode, errResp)
 		}
 
 		logger.Info(
@@ -29,7 +36,7 @@ func GetUserByIDHandler(userSvc user.UserService) fiber.Handler {
 
 }
 
-func throwGetUserByIDHandlerError(ctx *fiber.Ctx, statusCode int, errResp *models.ErrorResponse) error {
+func throwGetUserHandlerError(ctx *fiber.Ctx, statusCode int, errResp *models.ErrorResponse) error {
 	logger.Error(fmt.Sprintf("[%s] %s", errResp.MessageID, fmt.Sprintf("%s: %s", errResp.Message, errResp.Exception)))
 	return ctx.Status(statusCode).JSON(errResp)
 }

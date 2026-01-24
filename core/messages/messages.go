@@ -36,4 +36,8 @@ var (
 	ERR_USER_NOT_FOUND      = Message{Code: "USR006E", Text: "User not found"}
 
 	INFO_USER_FETCH_SUCCESS = Message{Code: "USR007I", Text: "User fetched successfully"}
+
+	INFO_USER_UPDATE_SUCCESS = Message{Code: "USR008I", Text: "User updated successfully"}
+
+	ERR_EMAIL_ALREADY_EXISTS = Message{Code: "USR009E", Text: "Email already in use"}
 )
