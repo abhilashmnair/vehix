@@ -43,6 +43,7 @@ func Middleware(authSvc auth.AuthService) fiber.Handler {
 
 		ctx.Locals("userID", claims.UserID)
 		ctx.Locals("email", claims.Email)
+		ctx.Locals("role", claims.Role)
 		return ctx.Next()
 	}
 }

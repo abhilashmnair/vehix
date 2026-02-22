@@ -4,13 +4,13 @@ import (
 	"fmt"
 	logger "vehix/core/logger"
 	"vehix/core/messages"
-	auth "vehix/core/service"
+	svc "vehix/core/service"
 	"vehix/models"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func RefreshTokenHandler(authSvc auth.AuthService) fiber.Handler {
+func RefreshAccessTokenHandler(authSvc svc.AuthService, userSvc svc.UserService) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
 		var payload models.RefreshTokenRequest
@@ -31,7 +31,16 @@ func RefreshTokenHandler(authSvc auth.AuthService) fiber.Handler {
 			})
 		}
 
-		accessToken, err := authSvc.GenerateAccessToken(claims.UserID, claims.Email)
+		statusCode, user, errResp := userSvc.GetUser(ctx.Context(), claims.UserID)
+		if errResp != nil {
+			return throwRefreshTokenHandlerError(ctx, statusCode, &models.ErrorResponse{
+				MessageID: messages.ERR_UNEXPECTED_ERROR.Code,
+				Message:   messages.ERR_UNEXPECTED_ERROR.Text,
+				Exception: errResp.Message,
+			})
+		}
+
+		accessToken, err := authSvc.GenerateAccessToken(claims.UserID, user.Email, user.Role)
 		if err != nil {
 			return throwRefreshTokenHandlerError(ctx, fiber.StatusInternalServerError, &models.ErrorResponse{
 				MessageID: messages.ERR_UNEXPECTED_ERROR.Code,

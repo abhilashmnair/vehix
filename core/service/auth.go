@@ -25,14 +25,15 @@ type Claims struct {
 	UserID string `json:"sub"`
 	Email  string `json:"email"`
 	Type   string `json:"typ"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
 type AuthService interface {
 	Register(ctx context.Context, payload models.RegisterUserPayload) (int, *models.ErrorResponse)
 	Login(ctx context.Context, payload models.LoginUserPayload) (int, *models.LoginSuccess, *models.ErrorResponse)
-	GenerateToken(userID, email string) (*models.LoginSuccess, error)
-	GenerateAccessToken(userID, email string) (string, error)
+	GenerateToken(userID, email, role string) (*models.LoginSuccess, error)
+	GenerateAccessToken(userID, email, role string) (string, error)
 	VerifyJWT(tokenString, expectedType string) (*Claims, error)
 }
 
@@ -110,7 +111,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, payload models.LoginUserPay
 		}
 	}
 
-	loginResp, err := s.GenerateToken(user.ID.String(), user.Email)
+	loginResp, err := s.GenerateToken(user.ID.String(), user.Email, user.Role)
 	if err != nil {
 		return fiber.StatusInternalServerError, nil, &models.ErrorResponse{
 			MessageID: messages.ERR_USER_LOGIN_FAILED.Code,
@@ -122,8 +123,8 @@ func (s *AuthServiceImpl) Login(ctx context.Context, payload models.LoginUserPay
 	return fiber.StatusOK, loginResp, nil
 }
 
-func (s *AuthServiceImpl) GenerateToken(userID, email string) (*models.LoginSuccess, error) {
-	accessToken, err := s.GenerateAccessToken(userID, email)
+func (s *AuthServiceImpl) GenerateToken(userID, email, role string) (*models.LoginSuccess, error) {
+	accessToken, err := s.GenerateAccessToken(userID, email, role)
 	if err != nil {
 		return nil, err
 	}
@@ -140,12 +141,13 @@ func (s *AuthServiceImpl) GenerateToken(userID, email string) (*models.LoginSucc
 	}, nil
 }
 
-func (s *AuthServiceImpl) GenerateAccessToken(userID, email string) (string, error) {
+func (s *AuthServiceImpl) GenerateAccessToken(userID, email, role string) (string, error) {
 
 	claims := Claims{
 		UserID: userID,
 		Email:  email,
 		Type:   "access",
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),

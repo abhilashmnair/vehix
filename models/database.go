@@ -11,6 +11,7 @@ type UserModel struct {
 	Name      string    `gorm:"type:varchar(255);not null"`
 	Email     string    `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Password  string    `gorm:"type:varchar(255);not null"`
+	Role      string    `gorm:"type:varchar(50);not null;default:'user'"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

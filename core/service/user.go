@@ -14,6 +14,7 @@ import (
 
 type UserService interface {
 	GetUser(ctx context.Context, userID string) (int, *models.UserResponse, *models.ErrorResponse)
+	ListUsers(ctx context.Context, userID string) (int, *[]models.UserResponse, *models.ErrorResponse)
 	UpdateUser(ctx context.Context, userID string, req *models.UpdateUserPayload) (int, *models.UserResponse, *models.ErrorResponse)
 	DeleteUser(ctx context.Context, userID string) (int, *models.ErrorResponse)
 }
@@ -51,6 +52,7 @@ func (s *UserServiceImpl) GetUser(ctx context.Context, userID string) (int, *mod
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
+		Role:      user.Role,
 		CreatedAt: user.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
 	}, nil
@@ -150,4 +152,31 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, userID string, req *mo
 		CreatedAt: user.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
 	}, nil
+}
+
+func (s *UserServiceImpl) ListUsers(ctx context.Context, userID string) (int, *[]models.UserResponse, *models.ErrorResponse) {
+	db := s.db.WithContext(ctx)
+
+	var users []models.UserModel
+	if err := db.Find(&users).Error; err != nil {
+		return fiber.StatusInternalServerError, nil, &models.ErrorResponse{
+			MessageID: messages.ERR_UNEXPECTED_ERROR.Code,
+			Message:   messages.ERR_UNEXPECTED_ERROR.Text,
+			Exception: err.Error(),
+		}
+	}
+
+	var response []models.UserResponse
+	for _, u := range users {
+		response = append(response, models.UserResponse{
+			ID:        u.ID,
+			Name:      u.Name,
+			Email:     u.Email,
+			Role:      u.Role,
+			CreatedAt: u.CreatedAt.Format(time.RFC3339Nano),
+			UpdatedAt: u.UpdatedAt.Format(time.RFC3339Nano),
+		})
+	}
+
+	return fiber.StatusOK, &response, nil
 }
