@@ -13,16 +13,15 @@ import (
 func ListUsersHandler(userSvc user.UserService) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 
-		userID, ok := ctx.Locals("userID").(string)
-		if !ok || userID == "" {
-			return throwListUsersHandlerError(ctx, fiber.StatusUnauthorized, &models.ErrorResponse{
-				MessageID: messages.ERR_UNAUTHORIZED.Code,
-				Message:   messages.ERR_UNAUTHORIZED.Text,
-				Exception: "userID not found in context",
+		if role, ok := ctx.Locals("role").(string); role != "admin" || !ok {
+			return throwListUsersHandlerError(ctx, fiber.StatusForbidden, &models.ErrorResponse{
+				MessageID: messages.ERR_FORBIDDEN.Code,
+				Message:   messages.ERR_FORBIDDEN.Text,
+				Exception: "user does not have admin privileges",
 			})
 		}
 
-		statusCode, userResp, errResp := userSvc.GetUser(ctx.Context(), userID)
+		statusCode, userResp, errResp := userSvc.ListUsers(ctx.Context())
 		if errResp != nil {
 			return throwListUsersHandlerError(ctx, statusCode, errResp)
 		}

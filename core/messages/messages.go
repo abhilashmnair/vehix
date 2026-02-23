@@ -21,7 +21,9 @@ var (
 	INFO_ACCESS_TOKEN_SUCCESS = Message{Code: "AUTH003I", Text: "Generated access token successfully"}
 	ERR_INVALID_ACCESS_TOKEN  = Message{Code: "AUTH004E", Text: "Access token invalid or expired"}
 
-	ERR_UNAUTHORIZED = Message{Code: "AUTH006E", Text: "Missing or invalid token"}
+	ERR_UNAUTHORIZED = Message{Code: "AUTH006E", Text: "Unauthorized"}
+
+	ERR_FORBIDDEN = Message{Code: "AUTH007E", Text: "Access denied"}
 )
 
 // User Messages

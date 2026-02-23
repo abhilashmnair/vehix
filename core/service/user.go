@@ -14,7 +14,7 @@ import (
 
 type UserService interface {
 	GetUser(ctx context.Context, userID string) (int, *models.UserResponse, *models.ErrorResponse)
-	ListUsers(ctx context.Context, userID string) (int, *[]models.UserResponse, *models.ErrorResponse)
+	ListUsers(ctx context.Context) (int, *[]models.UserResponse, *models.ErrorResponse)
 	UpdateUser(ctx context.Context, userID string, req *models.UpdateUserPayload) (int, *models.UserResponse, *models.ErrorResponse)
 	DeleteUser(ctx context.Context, userID string) (int, *models.ErrorResponse)
 }
@@ -30,7 +30,7 @@ func NewUserService(db *gorm.DB) UserService {
 func (s *UserServiceImpl) GetUser(ctx context.Context, userID string) (int, *models.UserResponse, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	var user models.UserModel
+	var user models.User
 	err := db.Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -61,7 +61,7 @@ func (s *UserServiceImpl) GetUser(ctx context.Context, userID string) (int, *mod
 func (s *UserServiceImpl) DeleteUser(ctx context.Context, userID string) (int, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	result := db.Where("id = ?", userID).Delete(&models.UserModel{})
+	result := db.Where("id = ?", userID).Delete(&models.User{})
 
 	if result.Error != nil {
 		return fiber.StatusInternalServerError, &models.ErrorResponse{
@@ -85,7 +85,7 @@ func (s *UserServiceImpl) DeleteUser(ctx context.Context, userID string) (int, *
 func (s *UserServiceImpl) UpdateUser(ctx context.Context, userID string, req *models.UpdateUserPayload) (int, *models.UserResponse, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	var user models.UserModel
+	var user models.User
 	err := db.Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -109,9 +109,15 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, userID string, req *mo
 
 	if req.Email != nil && *req.Email != user.Email {
 		var count int64
-		db.Model(&models.UserModel{}).
-			Where("email = ?", *req.Email).
-			Count(&count)
+		if err := db.Model(&models.User{}).
+			Where("email = ? AND id <> ?", *req.Email, user.ID).
+			Count(&count).Error; err != nil {
+			return fiber.StatusInternalServerError, nil, &models.ErrorResponse{
+				MessageID: messages.ERR_UNEXPECTED_ERROR.Code,
+				Message:   messages.ERR_UNEXPECTED_ERROR.Text,
+				Exception: err.Error(),
+			}
+		}
 
 		if count > 0 {
 			return fiber.StatusConflict, nil, &models.ErrorResponse{
@@ -136,7 +142,7 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, userID string, req *mo
 		user.Password = string(hashedPassword)
 	}
 
-	err = db.Save(&user).Error
+	err = db.Updates(&user).Error
 	if err != nil {
 		return fiber.StatusInternalServerError, nil, &models.ErrorResponse{
 			MessageID: messages.ERR_UNEXPECTED_ERROR.Code,
@@ -149,15 +155,16 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, userID string, req *mo
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
+		Role:      user.Role,
 		CreatedAt: user.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
 	}, nil
 }
 
-func (s *UserServiceImpl) ListUsers(ctx context.Context, userID string) (int, *[]models.UserResponse, *models.ErrorResponse) {
+func (s *UserServiceImpl) ListUsers(ctx context.Context) (int, *[]models.UserResponse, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	var users []models.UserModel
+	var users []models.User
 	if err := db.Find(&users).Error; err != nil {
 		return fiber.StatusInternalServerError, nil, &models.ErrorResponse{
 			MessageID: messages.ERR_UNEXPECTED_ERROR.Code,

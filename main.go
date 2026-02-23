@@ -18,9 +18,9 @@ func main() {
 
 	db := database.Connect()
 	err := db.AutoMigrate(
-		&models.UserModel{},
-		&models.VehicleModel{},
-		&models.RentalModel{},
+		&models.User{},
+		&models.Vehicle{},
+		&models.Rental{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
@@ -78,5 +78,6 @@ func main() {
 	v1.Patch("/rentals/:id", vehicleApi.UpdateVehicleHandler) // PATCH 	/api/v1/rentals/:rentalID - Update rental details
 	v1.Delete("/rentals/:id", rentalApi.DeleteRentalHandler)  // DELETE 	/api/v1/rentals/:rentalID - Delete vehicle details
 
+	// Start the server
 	log.Fatal(app.Listen(":3000"))
 }

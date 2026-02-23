@@ -13,7 +13,7 @@ import (
 func UpdateUserHandler(userSvc user.UserService) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		userID, ok := ctx.Locals("userID").(string)
-		if !ok || userID == "" {
+		if !ok {
 			return throwUpdateUserHandlerError(ctx, fiber.StatusUnauthorized, &models.ErrorResponse{
 				MessageID: messages.ERR_UNAUTHORIZED.Code,
 				Message:   messages.ERR_UNAUTHORIZED.Text,

@@ -31,7 +31,7 @@ type RefreshTokenRequest struct {
 // User Payload
 
 type RegisterUserPayload struct {
-	Name     string `json:"username"`
+	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -42,14 +42,14 @@ type LoginUserPayload struct {
 }
 
 type UpdateUserPayload struct {
-	Name     *string `json:"username,omitempty"`
+	Name     *string `json:"name,omitempty"`
 	Email    *string `json:"email,omitempty"`
 	Password *string `json:"password,omitempty"`
 }
 
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"username"`
+	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
 	CreatedAt string    `json:"created_at"`

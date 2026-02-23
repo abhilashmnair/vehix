@@ -48,7 +48,7 @@ func NewAuthService(db *gorm.DB) AuthService {
 func (s *AuthServiceImpl) Register(ctx context.Context, payload models.RegisterUserPayload) (int, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	var existingUser models.UserModel
+	var existingUser models.User
 	err := db.Where("email = ?", payload.Email).First(&existingUser).Error
 	if err == nil {
 		return fiber.StatusConflict, &models.ErrorResponse{
@@ -74,7 +74,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, payload models.RegisterU
 		}
 	}
 
-	user := models.UserModel{
+	user := models.User{
 		Name:     payload.Name,
 		Email:    payload.Email,
 		Password: string(hashedPassword),
@@ -94,7 +94,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, payload models.RegisterU
 func (s *AuthServiceImpl) Login(ctx context.Context, payload models.LoginUserPayload) (int, *models.LoginSuccess, *models.ErrorResponse) {
 	db := s.db.WithContext(ctx)
 
-	var user models.UserModel
+	var user models.User
 	if err := db.Where("email = ?", payload.Email).Find(&user).Error; err != nil {
 		return fiber.StatusNotFound, nil, &models.ErrorResponse{
 			MessageID: messages.ERR_USER_NOT_FOUND.Code,
