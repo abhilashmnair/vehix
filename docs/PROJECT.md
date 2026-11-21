@@ -235,7 +235,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-U3** Admin `GET /users` (paginated) and `GET /users/{id}` (`200/404`); non-admin `403`.
 - [x] **AC-U4** Admin `PATCH /users/{id}` incl. role/active changes; `404` unknown id; `409` email conflict.
 - [x] **AC-U5** Admin `DELETE /users/{id}` (`204`); `409` for user with active rentals or for the last admin; `404` unknown id.
-- [ ] **AC-U6** CLI `create-admin` is idempotent and tested.
+- [x] **AC-U6** CLI `create-admin` is idempotent and tested.
 
 ### Vehicles
 - [ ] **AC-V1** Admin `POST /vehicles` (`201` + `Location`); duplicate plate/VIN `409`; invalid data `422`; user `403`.
@@ -282,3 +282,4 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: The last-active-admin rule (6.3) is enforced for any target user, not only the caller: no request may leave the system without an active admin (`409`, code `last_admin`). The active admins are locked with `FOR UPDATE` during the check.
 - 2026-11-21: Admins may reset another user's password via `PATCH /users/{id}` without `current_password`.
 - 2026-11-21: `DELETE /users/{id}` for a user whose rentals are all `completed`/`cancelled` returns `409` (`user_has_rental_history`) rather than silently deactivating; the admin deactivates via `PATCH`. Reason: a `204` that does not delete would be surprising, and section 6.2 allows hard delete only without rental history.
+- 2026-11-21: `create-admin` never modifies an existing user. If `ADMIN_EMAIL` belongs to a user who is not an active admin it exits `1` with a message, instead of promoting or reactivating that account. It prints neither the email nor the password.

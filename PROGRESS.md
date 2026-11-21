@@ -18,7 +18,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-U3 | Admin list/get users | done |
 | AC-U4 | Admin update user | done |
 | AC-U5 | Admin delete user | done |
-| AC-U6 | CLI `create-admin` | pending |
+| AC-U6 | CLI `create-admin` | done |
 | AC-V1 | Create vehicle | pending |
 | AC-V2 | List/get vehicles | pending |
 | AC-V3 | Update vehicle | pending |

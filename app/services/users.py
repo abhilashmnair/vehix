@@ -1,6 +1,7 @@
 import uuid
+from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -125,3 +126,35 @@ def delete_user(session: Session, user_id: uuid.UUID) -> None:
         )
     session.delete(user)
     session.flush()
+
+
+def ensure_admin(session: Session, email: str, password: str) -> Literal["created", "exists"]:
+    """Idempotent admin seed. Never modifies an existing user.
+
+    Returns "exists" if an active admin with this email is already present. If the email belongs
+    to a user who is not an active admin, raises a conflict instead of silently changing them.
+    """
+    existing = session.scalar(select(User).where(func.lower(User.email) == email.lower()))
+    if existing is not None:
+        if existing.role == UserRole.ADMIN.value and existing.is_active:
+            return "exists"
+        raise ConflictError(
+            "A user with the configured admin email exists but is not an active admin; "
+            "it was left unchanged.",
+            code="admin_seed_conflict",
+        )
+    session.add(
+        User(
+            email=email.lower(),
+            full_name="Administrator",
+            password_hash=hash_password(password),
+            role=UserRole.ADMIN.value,
+            is_active=True,
+        )
+    )
+    try:
+        flush_user(session)
+    except ConflictError:  # another process created it between our check and insert
+        session.rollback()
+        return "exists"
+    return "created"
