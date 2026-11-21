@@ -5,9 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.errors import ConflictError, ForbiddenError, NotFoundError
-from app.models import User
+from app.models import User, UserRole
 from app.schemas.common import PageParams
-from app.schemas.user import UserCreate, UserSelfUpdate
+from app.schemas.user import UserAdminUpdate, UserCreate, UserSelfUpdate
 from app.security import hash_password, verify_password
 from app.services.pagination import paginate
 
@@ -73,4 +73,36 @@ def get_user(session: Session, user_id: uuid.UUID) -> User:
     user = session.get(User, user_id)
     if user is None:
         raise NotFoundError("User not found.")
+    return user
+
+
+def ensure_not_last_admin(session: Session, user: User) -> None:
+    """Raise 409 if `user` is the only active admin (so it cannot be removed/demoted).
+
+    The active admins are locked (`FOR UPDATE`) so two concurrent requests cannot both pass.
+    """
+    admins = select(User.id).where(User.role == UserRole.ADMIN.value, User.is_active.is_(True))
+    others = session.scalars(admins.where(User.id != user.id).with_for_update()).all()
+    if not others:
+        raise ConflictError("At least one active admin must remain.", code="last_admin")
+
+
+def update_user(session: Session, user_id: uuid.UUID, data: UserAdminUpdate) -> User:
+    user = get_user(session, user_id)
+    was_active_admin = user.role == UserRole.ADMIN.value and user.is_active
+    new_role = data.role.value if data.role is not None else user.role
+    new_active = data.is_active if data.is_active is not None else user.is_active
+    if was_active_admin and not (new_role == UserRole.ADMIN.value and new_active):
+        ensure_not_last_admin(session, user)
+
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if data.email is not None:
+        user.email = data.email
+    if data.password is not None:
+        user.password_hash = hash_password(data.password)
+    user.role = new_role
+    user.is_active = new_active
+    flush_user(session)
+    session.refresh(user)
     return user

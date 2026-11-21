@@ -66,3 +66,22 @@ class UserSelfUpdate(BaseModel):
         if self.password is not None and not self.current_password:
             raise ValueError("current_password is required to change the password")
         return self
+
+
+class UserAdminUpdate(BaseModel):
+    """PATCH /users/{id} (admin only). Admins may change role/is_active and reset the password."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    full_name: FullName | None = None
+    email: NormalizedEmail | None = None
+    password: Password | None = None
+    role: UserRole | None = None
+    is_active: bool | None = None
+
+    @model_validator(mode="after")
+    def _no_nulls(self) -> Self:
+        for name in self.model_fields_set:
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} must not be null")
+        return self

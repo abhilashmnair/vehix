@@ -6,7 +6,7 @@ from app.db import SessionDep
 from app.errors import error_responses
 from app.routers import API_PREFIX
 from app.schemas.common import Page, PageParamsDep
-from app.schemas.user import UserCreate, UserRead, UserSelfUpdate
+from app.schemas.user import UserAdminUpdate, UserCreate, UserRead, UserSelfUpdate
 from app.security import AdminUser, CurrentUser
 from app.services import users as users_service
 
@@ -71,3 +71,15 @@ def list_users(_admin: AdminUser, session: SessionDep, params: PageParamsDep) ->
 )
 def read_user(user_id: uuid.UUID, _admin: AdminUser, session: SessionDep) -> UserRead:
     return UserRead.model_validate(users_service.get_user(session, user_id))
+
+
+@router.patch(
+    "/{user_id}",
+    response_model=UserRead,
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 403, 404, 409, 422),
+)
+def update_user(
+    user_id: uuid.UUID, body: UserAdminUpdate, _admin: AdminUser, session: SessionDep
+) -> UserRead:
+    return UserRead.model_validate(users_service.update_user(session, user_id, body))
