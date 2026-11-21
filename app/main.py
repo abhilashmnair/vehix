@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app.errors import register_exception_handlers
-from app.routers import API_PREFIX, auth, health, users, vehicles
+from app.routers import API_PREFIX, auth, health, rentals, users, vehicles
 
 
 def create_app() -> FastAPI:
@@ -11,6 +11,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix=API_PREFIX)
     app.include_router(users.router, prefix=API_PREFIX)
     app.include_router(vehicles.router, prefix=API_PREFIX)
+    app.include_router(rentals.router, prefix=API_PREFIX)
     return app
 
 

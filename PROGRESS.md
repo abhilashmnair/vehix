@@ -23,7 +23,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-V2 | List/get vehicles | done |
 | AC-V3 | Update vehicle | done |
 | AC-V4 | Soft-delete vehicle | done |
-| AC-R1 | Create rental | pending |
+| AC-R1 | Create rental | done |
 | AC-R2 | Overlap protection | pending |
 | AC-R3 | List/get rentals | pending |
 | AC-R4 | Update rental | pending |

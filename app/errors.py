@@ -78,6 +78,14 @@ class ConflictError(AppError):
     default_message = "The request conflicts with the current state of the resource."
 
 
+class UnprocessableError(AppError):
+    """A well-formed request that violates a business rule about its own values (422)."""
+
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+    code = "unprocessable"
+    default_message = "The request could not be processed."
+
+
 _STATUS_CODES = {
     status.HTTP_400_BAD_REQUEST: "bad_request",
     status.HTTP_401_UNAUTHORIZED: "unauthorized",

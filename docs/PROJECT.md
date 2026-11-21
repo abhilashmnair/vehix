@@ -244,7 +244,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-V4** Admin `DELETE /vehicles/{id}` soft-deletes (`204`); `409` with active/reserved rentals; later `GET` is `404`.
 
 ### Rentals
-- [ ] **AC-R1** `POST /rentals` creates for self (`201` + `Location`), server-computed `total_price`; `422` for invalid dates; `409` for non-rentable vehicle; `404` for unknown/deleted vehicle; user cannot create for others (`403`); admin can.
+- [x] **AC-R1** `POST /rentals` creates for self (`201` + `Location`), server-computed `total_price`; `422` for invalid dates; `409` for non-rentable vehicle; `404` for unknown/deleted vehicle; user cannot create for others (`403`); admin can.
 - [ ] **AC-R2** Overlapping rentals rejected with `409` (including a concurrent-request test); adjacent and cancelled-overlap bookings allowed.
 - [ ] **AC-R3** `GET /rentals` and `GET /rentals/{id}`: user sees only own (other's id gives `404`), admin sees all with filters; paginated.
 - [ ] **AC-R4** `PATCH /rentals/{id}`: owner can edit only while `reserved`; re-checks overlap and recomputes price; admin can edit any; invalid state `409`.
@@ -285,3 +285,5 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: `create-admin` never modifies an existing user. If `ADMIN_EMAIL` belongs to a user who is not an active admin it exits `1` with a message, instead of promoting or reactivating that account. It prints neither the email nor the password.
 - 2026-11-21: VINs, when given, must be 17 characters (A-Z without I/O/Q, and digits) and are stored uppercase. `daily_rate` accepts at most 8 digits with 2 decimals and is serialised as a string (e.g. `"49.90"`) to avoid float rounding.
 - 2026-11-21: `available_from`/`available_to` return only vehicles with status `available` and no `reserved`/`active` rental overlapping the inclusive range; giving one bound means a single day, and `from > to` is `422`. `make` filter is a case-insensitive exact match.
+- 2026-11-21: Rentals are limited to 365 days (`422`, code `invalid_dates`) and `total_price` must fit `Numeric(10, 2)`; "today" is the UTC date. Sending `total_price`, `status` or any other unknown field on create is `422`.
+- 2026-11-21: An admin creating a rental for a user who does not exist gets `404`; for a deactivated user `409` (`user_inactive`). Authorization (`403`) is checked before vehicle lookup (`404`).

@@ -1,0 +1,87 @@
+import uuid
+from datetime import UTC, date, datetime
+from decimal import Decimal
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.errors import ConflictError, ForbiddenError, NotFoundError, UnprocessableError
+from app.models import Rental, User, UserRole, Vehicle, VehicleStatus
+from app.schemas.rental import RentalCreate
+from app.services.db_errors import violated_constraint
+from app.services.vehicles import get_vehicle
+
+OVERLAP_CONSTRAINT = "ex_rentals_vehicle_no_overlap"
+MAX_RENTAL_DAYS = 365
+MAX_TOTAL_PRICE = Decimal("99999999.99")  # Numeric(10, 2)
+
+
+def rental_days(start: date, end: date) -> int:
+    """Number of calendar days, both ends inclusive."""
+    return (end - start).days + 1
+
+
+def compute_total_price(daily_rate: Decimal, start: date, end: date) -> Decimal:
+    days = rental_days(start, end)
+    if days > MAX_RENTAL_DAYS:
+        raise UnprocessableError(
+            f"A rental cannot be longer than {MAX_RENTAL_DAYS} days.", code="invalid_dates"
+        )
+    total = (daily_rate * days).quantize(Decimal("0.01"))
+    if total > MAX_TOTAL_PRICE:
+        raise UnprocessableError("The total price is too large.", code="invalid_dates")
+    return total
+
+
+def flush_rental(session: Session) -> None:
+    """Flush so the DB exclusion constraint is reported here, mapped to 409.
+
+    The database (not a read-then-write check) decides, so concurrent requests cannot both win.
+    """
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        if violated_constraint(exc) == OVERLAP_CONSTRAINT:
+            raise ConflictError(
+                "Vehicle is already booked for these dates.", code="rental_overlap"
+            ) from exc
+        raise
+
+
+def create_rental(session: Session, actor: User, data: RentalCreate) -> Rental:
+    is_admin = actor.role == UserRole.ADMIN.value
+    owner_id = data.user_id or actor.id
+    if owner_id != actor.id and not is_admin:
+        raise ForbiddenError("You can only create rentals for yourself.")
+    if owner_id != actor.id:
+        owner = session.get(User, owner_id)
+        if owner is None:
+            raise NotFoundError("User not found.")
+        if not owner.is_active:
+            raise ConflictError("The user is not active.", code="user_inactive")
+
+    vehicle: Vehicle = get_vehicle(session, data.vehicle_id)
+    if vehicle.status != VehicleStatus.AVAILABLE.value:
+        raise ConflictError("Vehicle is not available for rental.", code="vehicle_not_rentable")
+    if not is_admin and data.start_date < datetime.now(UTC).date():
+        raise UnprocessableError("start_date cannot be in the past.", code="invalid_dates")
+
+    rental = Rental(
+        user_id=owner_id,
+        vehicle_id=vehicle.id,
+        start_date=data.start_date,
+        end_date=data.end_date,
+        total_price=compute_total_price(vehicle.daily_rate, data.start_date, data.end_date),
+        notes=data.notes,
+    )
+    session.add(rental)
+    flush_rental(session)
+    session.refresh(rental)
+    return rental
+
+
+def get_rental(session: Session, rental_id: uuid.UUID) -> Rental:
+    rental = session.get(Rental, rental_id)
+    if rental is None:
+        raise NotFoundError("Rental not found.")
+    return rental
