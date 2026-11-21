@@ -30,4 +30,4 @@ Branch: `feature/vehicle-management-backend`
 | AC-R5 | Cancel and state machine | done |
 | AC-R6 | Admin delete rental | done |
 | AC-H1 | Permission matrix test | done |
-| AC-H2 | Fresh-clone gate, README | pending |
+| AC-H2 | Fresh-clone gate, README | done |
