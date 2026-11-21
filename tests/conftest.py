@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session
 
-from app.config import EnvConfigError, Settings, get_settings, validate_env
+from app.config import SERVER_VARS, TEST_VARS, EnvConfigError, Settings, get_settings, validate_env
 from app.db import get_engine
 from app.models import Rental, User, UserRole, Vehicle
 from app.security import create_access_token, hash_password
@@ -20,7 +20,7 @@ from tests.helpers import upgrade
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Fail fast, listing variable names only, if `.env` is missing or incomplete."""
     try:
-        validate_env()
+        validate_env(required=SERVER_VARS + TEST_VARS)
     except EnvConfigError as exc:
         raise pytest.UsageError(f"Test environment is not configured. {exc}") from exc
     # Never run against the dev database by accident.
@@ -37,6 +37,7 @@ def settings() -> Settings:
 @pytest.fixture(scope="session")
 def test_engine(settings: Settings) -> Iterator[Engine]:
     """Engine for `vehicles_test`, reset to an empty schema and migrated to head once."""
+    assert settings.test_db_name, "checked in pytest_sessionstart"
     engine = create_engine(settings.database_url(settings.test_db_name), pool_pre_ping=True)
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))

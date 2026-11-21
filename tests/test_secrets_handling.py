@@ -10,7 +10,14 @@ from pydantic import SecretStr
 
 from app import config
 from app.cli import main
-from app.config import PLACEHOLDER, REQUIRED_VARS, Settings
+from app.config import (
+    ADMIN_VARS,
+    PLACEHOLDER,
+    REQUIRED_VARS,
+    SERVER_VARS,
+    TEST_VARS,
+    Settings,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 SECRET_VARS = ("DB_PASSWORD", "JWT_SECRET", "ADMIN_PASSWORD")
@@ -51,8 +58,9 @@ def test_env_example_has_placeholders_only() -> None:
 
 def test_settings_use_secretstr_and_never_repr_secrets() -> None:
     values = valid_values()
-    for field in ("db_password", "jwt_secret", "admin_password"):
+    for field in ("db_password", "jwt_secret"):
         assert Settings.model_fields[field].annotation is SecretStr
+    assert Settings.model_fields["admin_password"].annotation == SecretStr | None
     settings = Settings(**{k.lower(): v for k, v in values.items()})  # type: ignore[arg-type]
     for name in SECRET_VARS:
         assert values[name] not in repr(settings)
@@ -100,3 +108,56 @@ def test_process_environment_can_replace_env_file(
     for name, value in valid_values().items():
         monkeypatch.setenv(name, value)
     assert config.find_env_problems(tmp_path / ".env") == []
+
+
+def server_only_values() -> dict[str, str]:
+    """What a production host sets: no ADMIN_* and no TEST_DB_NAME."""
+    values = valid_values()
+    for name in (*ADMIN_VARS, *TEST_VARS):
+        del values[name]
+    return values
+
+
+def test_server_needs_neither_admin_nor_test_variables(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    env = write_env(tmp_path / ".env", server_only_values())
+    assert config.find_env_problems(env) == []
+    assert main(["check-env", "--env-file", str(env)]) == 0
+    settings = Settings(_env_file=None, **{k.lower(): v for k, v in server_only_values().items()})  # type: ignore[arg-type]
+    assert settings.admin_email is None
+    assert settings.admin_password is None
+    assert settings.test_db_name is None
+
+
+def test_server_only_environment_works_without_an_env_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for name, value in server_only_values().items():
+        monkeypatch.setenv(name, value)
+    assert config.find_env_problems(tmp_path / ".env") == []
+
+
+def test_admin_and_test_variables_are_required_only_where_needed(tmp_path: Path) -> None:
+    env = write_env(tmp_path / ".env", server_only_values())
+    assert config.find_env_problems(env, required=SERVER_VARS + ADMIN_VARS) == list(ADMIN_VARS)
+    assert config.find_env_problems(env, required=SERVER_VARS + TEST_VARS) == list(TEST_VARS)
+
+
+def test_optional_variable_that_is_present_must_not_be_a_placeholder(tmp_path: Path) -> None:
+    values = server_only_values()
+    values["ADMIN_PASSWORD"] = PLACEHOLDER
+    env = write_env(tmp_path / ".env", values)
+    assert config.find_env_problems(env) == ["ADMIN_PASSWORD"]
+
+
+def test_create_admin_names_the_missing_admin_variables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import app.cli
+
+    monkeypatch.setattr(app.cli, "ENV_FILE", write_env(tmp_path / ".env", server_only_values()))
+    assert main(["create-admin"]) == 1
+    err = capsys.readouterr().err
+    assert "ADMIN_EMAIL" in err
+    assert "ADMIN_PASSWORD" in err
