@@ -182,3 +182,9 @@ def transition_rental(
     flush_rental(session)
     session.refresh(rental)
     return rental
+
+
+def delete_rental(session: Session, actor: User, rental_id: uuid.UUID) -> None:
+    """Hard delete (admin-only via the router dependency)."""
+    session.delete(get_rental(session, actor, rental_id))
+    session.flush()

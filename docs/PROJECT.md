@@ -249,7 +249,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-R3** `GET /rentals` and `GET /rentals/{id}`: user sees only own (other's id gives `404`), admin sees all with filters; paginated.
 - [x] **AC-R4** `PATCH /rentals/{id}`: owner can edit only while `reserved`; re-checks overlap and recomputes price; admin can edit any; invalid state `409`.
 - [x] **AC-R5** `POST /rentals/{id}/cancel` and status transitions follow the state machine; invalid transitions `409`.
-- [ ] **AC-R6** Admin `DELETE /rentals/{id}` (`204`); user `403`.
+- [x] **AC-R6** Admin `DELETE /rentals/{id}` (`204`); user `403`.
 
 ### Hardening
 - [ ] **AC-H1** Permission matrix test: a parametrized test hits every endpoint as anonymous/user/admin and asserts the expected status from section 2.

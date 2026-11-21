@@ -105,3 +105,13 @@ def activate_rental(rental_id: uuid.UUID, admin: AdminUser, session: SessionDep)
 def complete_rental(rental_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> RentalRead:
     rental = rentals_service.transition_rental(session, admin, rental_id, RentalStatus.COMPLETED)
     return RentalRead.model_validate(rental)
+
+
+@router.delete(
+    "/{rental_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(401, 403, 404, 422),
+)
+def delete_rental(rental_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> Response:
+    rentals_service.delete_rental(session, admin, rental_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
