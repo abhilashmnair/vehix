@@ -7,7 +7,7 @@ from app.db import SessionDep
 from app.errors import error_responses
 from app.routers import API_PREFIX
 from app.schemas.common import Page, PageParamsDep
-from app.schemas.rental import RentalCreate, RentalFilters, RentalRead
+from app.schemas.rental import RentalCreate, RentalFilters, RentalRead, RentalUpdate
 from app.security import CurrentUser
 from app.services import rentals as rentals_service
 
@@ -57,3 +57,17 @@ def list_rentals(
 )
 def read_rental(rental_id: uuid.UUID, current: CurrentUser, session: SessionDep) -> RentalRead:
     return RentalRead.model_validate(rentals_service.get_rental(session, current, rental_id))
+
+
+@router.patch(
+    "/{rental_id}",
+    response_model=RentalRead,
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 404, 409, 422),
+)
+def update_rental(
+    rental_id: uuid.UUID, body: RentalUpdate, current: CurrentUser, session: SessionDep
+) -> RentalRead:
+    return RentalRead.model_validate(
+        rentals_service.update_rental(session, current, rental_id, body)
+    )

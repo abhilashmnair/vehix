@@ -49,3 +49,22 @@ class RentalFilters(BaseModel):
     user_id: uuid.UUID | None = None
     vehicle_id: uuid.UUID | None = None
     status: RentalStatus | None = None
+
+
+class RentalUpdate(BaseModel):
+    """PATCH /rentals/{id}. Only dates and notes are editable; `notes: null` clears the notes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start_date: date | None = None
+    end_date: date | None = None
+    notes: Notes | None = None
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        for name in ("start_date", "end_date"):
+            if name in self.model_fields_set and getattr(self, name) is None:
+                raise ValueError(f"{name} must not be null")
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("end_date must not be before start_date")
+        return self

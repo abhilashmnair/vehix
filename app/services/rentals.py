@@ -7,9 +7,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.errors import ConflictError, ForbiddenError, NotFoundError, UnprocessableError
-from app.models import Rental, User, UserRole, Vehicle, VehicleStatus
+from app.models import Rental, RentalStatus, User, UserRole, Vehicle, VehicleStatus
 from app.schemas.common import PageParams
-from app.schemas.rental import RentalCreate, RentalFilters
+from app.schemas.rental import RentalCreate, RentalFilters, RentalUpdate
 from app.services.db_errors import violated_constraint
 from app.services.pagination import paginate
 from app.services.vehicles import get_vehicle
@@ -103,4 +103,54 @@ def get_rental(session: Session, actor: User, rental_id: uuid.UUID) -> Rental:
     rental = session.get(Rental, rental_id)
     if rental is None or (actor.role != UserRole.ADMIN.value and rental.user_id != actor.id):
         raise NotFoundError("Rental not found.")
+    return rental
+
+
+def update_rental(
+    session: Session, actor: User, rental_id: uuid.UUID, data: RentalUpdate
+) -> Rental:
+    """Edit dates/notes.
+
+    Users: only their own rental and only while `reserved`. Admins: any rental, but dates can
+    only change while it is `reserved` or `active`. Overlap is re-checked by the database, and
+    the price is recomputed from the rate frozen at creation (not the vehicle's current rate).
+    """
+    rental = get_rental(session, actor, rental_id)
+    if not data.model_fields_set:
+        return rental
+    is_admin = actor.role == UserRole.ADMIN.value
+    changes_dates = bool({"start_date", "end_date"} & data.model_fields_set)
+    if not is_admin:
+        editable = {RentalStatus.RESERVED.value}
+    elif changes_dates:
+        editable = {RentalStatus.RESERVED.value, RentalStatus.ACTIVE.value}
+    else:
+        editable = {status.value for status in RentalStatus}
+    if rental.status not in editable:
+        raise ConflictError(
+            f"A {rental.status} rental cannot be edited this way.", code="invalid_state"
+        )
+
+    if "notes" in data.model_fields_set:
+        rental.notes = data.notes
+    if changes_dates:
+        start = data.start_date or rental.start_date
+        end = data.end_date or rental.end_date
+        if end < start:
+            raise UnprocessableError(
+                "end_date must not be before start_date.", code="invalid_dates"
+            )
+        if (
+            not is_admin
+            and data.start_date is not None
+            and data.start_date != rental.start_date
+            and data.start_date < datetime.now(UTC).date()
+        ):
+            raise UnprocessableError("start_date cannot be in the past.", code="invalid_dates")
+        frozen_rate = rental.total_price / rental_days(rental.start_date, rental.end_date)
+        rental.total_price = compute_total_price(frozen_rate, start, end)
+        rental.start_date = start
+        rental.end_date = end
+    flush_rental(session)
+    session.refresh(rental)
     return rental

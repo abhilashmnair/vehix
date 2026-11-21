@@ -247,7 +247,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-R1** `POST /rentals` creates for self (`201` + `Location`), server-computed `total_price`; `422` for invalid dates; `409` for non-rentable vehicle; `404` for unknown/deleted vehicle; user cannot create for others (`403`); admin can.
 - [x] **AC-R2** Overlapping rentals rejected with `409` (including a concurrent-request test); adjacent and cancelled-overlap bookings allowed.
 - [x] **AC-R3** `GET /rentals` and `GET /rentals/{id}`: user sees only own (other's id gives `404`), admin sees all with filters; paginated.
-- [ ] **AC-R4** `PATCH /rentals/{id}`: owner can edit only while `reserved`; re-checks overlap and recomputes price; admin can edit any; invalid state `409`.
+- [x] **AC-R4** `PATCH /rentals/{id}`: owner can edit only while `reserved`; re-checks overlap and recomputes price; admin can edit any; invalid state `409`.
 - [ ] **AC-R5** `POST /rentals/{id}/cancel` and status transitions follow the state machine; invalid transitions `409`.
 - [ ] **AC-R6** Admin `DELETE /rentals/{id}` (`204`); user `403`.
 
@@ -288,3 +288,4 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: Rentals are limited to 365 days (`422`, code `invalid_dates`) and `total_price` must fit `Numeric(10, 2)`; "today" is the UTC date. Sending `total_price`, `status` or any other unknown field on create is `422`.
 - 2026-11-21: An admin creating a rental for a user who does not exist gets `404`; for a deactivated user `409` (`user_inactive`). Authorization (`403`) is checked before vehicle lookup (`404`).
 - 2026-11-21: For non-admins the `user_id` filter on `GET /rentals` is applied on top of the ownership scope, so another user's id yields an empty page rather than an error.
+- 2026-11-21: `PATCH /rentals/{id}` edits only `start_date`, `end_date` and `notes`. Users: own rental, only while `reserved` (else `409` `invalid_state`). Admins: any rental; dates change only while `reserved`/`active`, notes at any status. A date edit recomputes `total_price` from the daily rate frozen at creation (`total_price / days`), not the vehicle's current rate. A user may not move `start_date` into the past (admins may).
