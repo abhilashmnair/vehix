@@ -8,7 +8,7 @@ Branch: `feature/vehicle-management-backend`
 | ID | Summary | Status |
 |----|---------|--------|
 | AC-F0 | Secrets handling, `.env.example`, `check-env` | done |
-| AC-F1 | Scaffold, config, `/health`, test DB wiring | blocked on `.env` |
+| AC-F1 | Scaffold, config, `/health`, test DB wiring | done |
 | AC-F2 | Alembic + initial migration | pending |
 | AC-F3 | Error envelope + handlers | pending |
 | AC-A1 | `POST /auth/login` | pending |
@@ -35,5 +35,3 @@ Branch: `feature/vehicle-management-backend`
 ## Notes
 
 - `db/Dockerfile` was moved from the repo root to match `PROJECT.md` section 7.
-- `.env` does not exist yet. Per `AGENTS.md` the agent cannot create it or ask for values.
-  Everything that needs the database (AC-F1 onward) waits until the user creates `.env`.
