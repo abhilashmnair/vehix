@@ -1,10 +1,15 @@
+import uuid
+
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.errors import ConflictError, ForbiddenError
+from app.errors import ConflictError, ForbiddenError, NotFoundError
 from app.models import User
+from app.schemas.common import PageParams
 from app.schemas.user import UserCreate, UserSelfUpdate
 from app.security import hash_password, verify_password
+from app.services.pagination import paginate
 
 EMAIL_UNIQUE_CONSTRAINT = "uq_users_email_lower"
 
@@ -56,4 +61,16 @@ def create_user(session: Session, data: UserCreate) -> User:
     session.add(user)
     flush_user(session)
     session.refresh(user)
+    return user
+
+
+def list_users(session: Session, params: PageParams) -> tuple[list[User], int]:
+    stmt = select(User).order_by(User.created_at, User.id)
+    return paginate(session, stmt, params)
+
+
+def get_user(session: Session, user_id: uuid.UUID) -> User:
+    user = session.get(User, user_id)
+    if user is None:
+        raise NotFoundError("User not found.")
     return user

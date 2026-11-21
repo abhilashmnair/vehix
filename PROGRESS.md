@@ -15,7 +15,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-A2 | Token auth dependencies, DB re-check | done |
 | AC-U1 | `/users/me` | done |
 | AC-U2 | Admin create user | done |
-| AC-U3 | Admin list/get users | pending |
+| AC-U3 | Admin list/get users | done |
 | AC-U4 | Admin update user | pending |
 | AC-U5 | Admin delete user | pending |
 | AC-U6 | CLI `create-admin` | pending |
