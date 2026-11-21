@@ -12,7 +12,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-F2 | Alembic + initial migration | done |
 | AC-F3 | Error envelope + handlers | done |
 | AC-A1 | `POST /auth/login` | done |
-| AC-A2 | Token auth dependencies, DB re-check | pending |
+| AC-A2 | Token auth dependencies, DB re-check | done |
 | AC-U1 | `/users/me` | pending |
 | AC-U2 | Admin create user | pending |
 | AC-U3 | Admin list/get users | pending |
