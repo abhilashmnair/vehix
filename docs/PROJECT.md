@@ -245,7 +245,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 
 ### Rentals
 - [x] **AC-R1** `POST /rentals` creates for self (`201` + `Location`), server-computed `total_price`; `422` for invalid dates; `409` for non-rentable vehicle; `404` for unknown/deleted vehicle; user cannot create for others (`403`); admin can.
-- [ ] **AC-R2** Overlapping rentals rejected with `409` (including a concurrent-request test); adjacent and cancelled-overlap bookings allowed.
+- [x] **AC-R2** Overlapping rentals rejected with `409` (including a concurrent-request test); adjacent and cancelled-overlap bookings allowed.
 - [ ] **AC-R3** `GET /rentals` and `GET /rentals/{id}`: user sees only own (other's id gives `404`), admin sees all with filters; paginated.
 - [ ] **AC-R4** `PATCH /rentals/{id}`: owner can edit only while `reserved`; re-checks overlap and recomputes price; admin can edit any; invalid state `409`.
 - [ ] **AC-R5** `POST /rentals/{id}/cancel` and status transitions follow the state machine; invalid transitions `409`.
