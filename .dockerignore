@@ -1,0 +1,18 @@
+# Keep secrets, local state and dev-only files out of the image build context.
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.venv
+**/__pycache__
+.mypy_cache
+.pytest_cache
+.ruff_cache
+tests
+db
+docs
+PROGRESS.md
+README.md
+AGENTS.md
+requirements-dev.txt
