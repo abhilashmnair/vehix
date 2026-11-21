@@ -224,7 +224,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 ### Foundation
 - [x] **AC-F0** Secrets handling: `.env` is git-ignored, `.env.example` has placeholders only, config uses `SecretStr`, `python -m app.cli check-env` reports missing/placeholder variable names without printing values, and a missing `.env` produces a clear "populate `.env`" error (tested).
 - [x] **AC-F1** Project scaffold, config from `.env`, `GET /health` returns `200`, DB connection works; pytest runs green against `vehicles_test`.
-- [ ] **AC-F2** Alembic set up; initial migration creates `users`, `vehicles`, `rentals` with all constraints (including `btree_gist` exclusion); migration applies on an empty DB.
+- [x] **AC-F2** Alembic set up; initial migration creates `users`, `vehicles`, `rentals` with all constraints (including `btree_gist` exclusion); migration applies on an empty DB.
 - [ ] **AC-F3** Uniform error envelope and exception handlers (`401/403/404/409/422/500`) with tests.
 
 ### Auth and users
@@ -273,3 +273,5 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: `GET /health` is served at `/api/v1/health` (under the base path). Reason: section 4 sets base path `/api/v1` for all routes.
 - 2026-11-21: The session dependency commits after the route returns, so services call `session.flush()` where a DB constraint violation must become a `409`. Reason: FastAPI runs post-`yield` code after the response is built.
 - 2026-11-21: Dev dependency `httpx2` replaces `httpx` (Starlette's TestClient deprecates `httpx`).
+- 2026-11-21: Case-insensitive email uniqueness uses a unique index on `lower(email)` (no `citext`), because the init script only installs `btree_gist`.
+- 2026-11-21: Alembic gets its database URL from `.env` via `app.db.get_engine`, never from `alembic.ini`. The test suite resets `vehicles_test` and migrates it to head once per session.

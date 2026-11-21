@@ -9,7 +9,7 @@ Branch: `feature/vehicle-management-backend`
 |----|---------|--------|
 | AC-F0 | Secrets handling, `.env.example`, `check-env` | done |
 | AC-F1 | Scaffold, config, `/health`, test DB wiring | done |
-| AC-F2 | Alembic + initial migration | pending |
+| AC-F2 | Alembic + initial migration | done |
 | AC-F3 | Error envelope + handlers | pending |
 | AC-A1 | `POST /auth/login` | pending |
 | AC-A2 | Token auth dependencies, DB re-check | pending |

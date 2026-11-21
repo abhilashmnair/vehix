@@ -2,11 +2,12 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, text
 
 from app.config import EnvConfigError, Settings, get_settings, validate_env
 from app.db import get_engine
 from app.main import create_app
+from tests.helpers import upgrade
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:
@@ -28,9 +29,22 @@ def settings() -> Settings:
 
 @pytest.fixture(scope="session")
 def test_engine(settings: Settings) -> Iterator[Engine]:
+    """Engine for `vehicles_test`, reset to an empty schema and migrated to head once."""
     engine = create_engine(settings.database_url(settings.test_db_name), pool_pre_ping=True)
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+    upgrade(engine)
     yield engine
     engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def clean_tables(test_engine: Engine) -> Iterator[None]:
+    """Each test starts and ends with empty tables, so tests do not depend on order."""
+    yield
+    with test_engine.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE rentals, vehicles, users CASCADE"))
 
 
 @pytest.fixture
