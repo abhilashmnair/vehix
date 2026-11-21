@@ -8,10 +8,11 @@ import os
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from dotenv import dotenv_values
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import SecretStr, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy.engine import URL
 
 PLACEHOLDER = "CHANGE_ME"
@@ -96,6 +97,17 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int
     admin_email: str
     admin_password: SecretStr
+    # Optional. CORS is disabled unless origins are listed (comma separated in `.env`).
+    cors_origins: Annotated[list[str], NoDecode] = []
+    # OpenAPI docs (/docs, /redoc, /openapi.json); set DOCS_ENABLED=false in production.
+    docs_enabled: bool = True
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _split_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
 
     def database_url(self, database: str | None = None) -> URL:
         """Build the SQLAlchemy URL from its parts; the password lives only in `.env`."""

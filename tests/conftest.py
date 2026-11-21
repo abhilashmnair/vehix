@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 
 from app.config import EnvConfigError, Settings, get_settings, validate_env
 from app.db import get_engine
-from app.main import create_app
 from app.models import Rental, User, UserRole, Vehicle
 from app.security import create_access_token, hash_password
 from tests.helpers import upgrade
@@ -57,6 +56,8 @@ def clean_tables(test_engine: Engine) -> Iterator[None]:
 
 @pytest.fixture
 def client(test_engine: Engine) -> Iterator[TestClient]:
+    from app.main import create_app  # lazy: needs a valid .env, checked in pytest_sessionstart
+
     app = create_app()
     app.dependency_overrides[get_engine] = lambda: test_engine
     with TestClient(app) as test_client:
