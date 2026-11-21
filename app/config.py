@@ -18,18 +18,22 @@ from sqlalchemy.engine import URL
 PLACEHOLDER = "CHANGE_ME"
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
-REQUIRED_VARS: tuple[str, ...] = (
+# Needed to serve requests (and to run migrations).
+SERVER_VARS: tuple[str, ...] = (
     "DB_HOST",
     "DB_PORT",
     "DB_USER",
     "DB_PASSWORD",
     "DB_NAME",
-    "TEST_DB_NAME",
     "JWT_SECRET",
     "JWT_EXPIRE_MINUTES",
-    "ADMIN_EMAIL",
-    "ADMIN_PASSWORD",
 )
+# Needed only by `python -m app.cli create-admin`.
+ADMIN_VARS: tuple[str, ...] = ("ADMIN_EMAIL", "ADMIN_PASSWORD")
+# Needed only by the test suite.
+TEST_VARS: tuple[str, ...] = ("TEST_DB_NAME",)
+# Every variable that must appear in `.env.example`.
+REQUIRED_VARS: tuple[str, ...] = SERVER_VARS + ADMIN_VARS + TEST_VARS
 
 
 class EnvConfigError(RuntimeError):
@@ -55,11 +59,16 @@ class InvalidEnvError(EnvConfigError):
 
 
 def find_env_problems(
-    env_file: Path = ENV_FILE, environ: Mapping[str, str] | None = None
+    env_file: Path = ENV_FILE,
+    environ: Mapping[str, str] | None = None,
+    required: tuple[str, ...] = SERVER_VARS,
 ) -> list[str]:
-    """Return names of required variables that are missing, empty or still a placeholder.
+    """Return names of variables that are missing, empty or still a placeholder.
 
-    Raises MissingEnvFileError if the file does not exist and no required variable is
+    A variable in `required` must be set. Any other known variable is optional, but if it is
+    present it must not be empty or a placeholder.
+
+    Raises MissingEnvFileError if the file does not exist and no known variable is
     provided through the process environment.
     """
     environ = os.environ if environ is None else environ
@@ -71,15 +80,22 @@ def find_env_problems(
     for name in REQUIRED_VARS:
         if name in environ:
             values[name] = environ[name]
+
+    def unusable(name: str) -> bool:
+        value = values.get(name)
+        return value is None or value.strip() in ("", PLACEHOLDER)
+
     return [
-        name
-        for name in REQUIRED_VARS
-        if (value := values.get(name)) is None or value.strip() in ("", PLACEHOLDER)
+        name for name in REQUIRED_VARS if (name in required or name in values) and unusable(name)
     ]
 
 
-def validate_env(env_file: Path = ENV_FILE, environ: Mapping[str, str] | None = None) -> None:
-    problems = find_env_problems(env_file, environ)
+def validate_env(
+    env_file: Path = ENV_FILE,
+    environ: Mapping[str, str] | None = None,
+    required: tuple[str, ...] = SERVER_VARS,
+) -> None:
+    problems = find_env_problems(env_file, environ, required)
     if problems:
         raise InvalidEnvError(problems)
 
@@ -92,11 +108,12 @@ class Settings(BaseSettings):
     db_user: str
     db_password: SecretStr
     db_name: str
-    test_db_name: str
     jwt_secret: SecretStr
     jwt_expire_minutes: int
-    admin_email: str
-    admin_password: SecretStr
+    # Optional: only the test suite and `create-admin` need these (see TEST_VARS, ADMIN_VARS).
+    test_db_name: str | None = None
+    admin_email: str | None = None
+    admin_password: SecretStr | None = None
     # Optional. CORS is disabled unless origins are listed (comma separated in `.env`).
     cors_origins: Annotated[list[str], NoDecode] = []
     # OpenAPI docs (/docs, /redoc, /openapi.json); set DOCS_ENABLED=false in production.

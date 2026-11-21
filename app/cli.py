@@ -9,7 +9,7 @@ from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
-from app.config import ENV_FILE, EnvConfigError, get_settings, validate_env
+from app.config import ADMIN_VARS, ENV_FILE, SERVER_VARS, EnvConfigError, get_settings, validate_env
 from app.db import get_engine
 from app.errors import AppError
 from app.schemas.user import NormalizedEmail, Password
@@ -59,11 +59,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "check-env":
         return check_env(args.env_file)
     try:
-        validate_env(ENV_FILE)
+        validate_env(ENV_FILE, required=SERVER_VARS + ADMIN_VARS)
     except EnvConfigError as exc:
         print(f"create-admin failed: {exc}", file=sys.stderr)
         return 1
     settings = get_settings()
+    if settings.admin_email is None or settings.admin_password is None:  # pragma: no cover
+        print("create-admin failed: ADMIN_EMAIL and ADMIN_PASSWORD are required.", file=sys.stderr)
+        return 1
     return create_admin(
         get_engine(), settings.admin_email, settings.admin_password.get_secret_value()
     )
