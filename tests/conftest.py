@@ -1,12 +1,18 @@
-from collections.abc import Iterator
+import secrets
+import uuid
+from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.orm import Session
 
 from app.config import EnvConfigError, Settings, get_settings, validate_env
 from app.db import get_engine
 from app.main import create_app
+from app.models import User, UserRole
+from app.security import create_access_token, hash_password
 from tests.helpers import upgrade
 
 
@@ -53,3 +59,63 @@ def client(test_engine: Engine) -> Iterator[TestClient]:
     app.dependency_overrides[get_engine] = lambda: test_engine
     with TestClient(app) as test_client:
         yield test_client
+
+
+@dataclass
+class UserCred:
+    """A user created for a test, with the throwaway password it was created with."""
+
+    id: uuid.UUID
+    email: str
+    password: str
+    role: str
+
+
+UserFactory = Callable[..., UserCred]
+
+
+@pytest.fixture
+def user_factory(test_engine: Engine) -> UserFactory:
+    def create(
+        *,
+        email: str | None = None,
+        password: str | None = None,
+        role: str = UserRole.USER.value,
+        is_active: bool = True,
+        full_name: str = "Test Person",
+    ) -> UserCred:
+        email = email or f"user-{secrets.token_hex(4)}@example.com"
+        password = password or secrets.token_urlsafe(24)
+        with Session(test_engine) as session:
+            user = User(
+                email=email.lower(),
+                full_name=full_name,
+                password_hash=hash_password(password),
+                role=role,
+                is_active=is_active,
+            )
+            session.add(user)
+            session.commit()
+            return UserCred(id=user.id, email=user.email, password=password, role=role)
+
+    return create
+
+
+@pytest.fixture
+def admin(user_factory: UserFactory) -> UserCred:
+    return user_factory(role=UserRole.ADMIN.value, full_name="Admin Person")
+
+
+@pytest.fixture
+def user(user_factory: UserFactory) -> UserCred:
+    return user_factory()
+
+
+@pytest.fixture
+def admin_token(admin: UserCred) -> str:
+    return create_access_token(admin.id, admin.role)[0]
+
+
+@pytest.fixture
+def user_token(user: UserCred) -> str:
+    return create_access_token(user.id, user.role)[0]

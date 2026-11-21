@@ -228,7 +228,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-F3** Uniform error envelope and exception handlers (`401/403/404/409/422/500`) with tests.
 
 ### Auth and users
-- [ ] **AC-A1** `POST /auth/login` succeeds with valid credentials; `401` for wrong password, unknown email, inactive user (identical message).
+- [x] **AC-A1** `POST /auth/login` succeeds with valid credentials; `401` for wrong password, unknown email, inactive user (identical message).
 - [ ] **AC-A2** Protected routes return `401` without/with invalid/expired token; role and `is_active` re-checked from DB.
 - [ ] **AC-U1** `GET/PATCH /users/me` work; password change requires `current_password`; `role`/`is_active` change attempts return `403`; response never includes password data.
 - [ ] **AC-U2** Admin `POST /users` (`201`), duplicate email (`409`), weak password/invalid email (`422`), non-admin (`403`).

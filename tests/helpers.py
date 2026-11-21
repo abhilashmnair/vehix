@@ -22,3 +22,7 @@ def upgrade(engine: Engine, revision: str = "head") -> None:
 
 def downgrade(engine: Engine, revision: str = "base") -> None:
     command.downgrade(alembic_config(engine), revision)
+
+
+def auth(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
