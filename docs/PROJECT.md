@@ -238,7 +238,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-U6** CLI `create-admin` is idempotent and tested.
 
 ### Vehicles
-- [ ] **AC-V1** Admin `POST /vehicles` (`201` + `Location`); duplicate plate/VIN `409`; invalid data `422`; user `403`.
+- [x] **AC-V1** Admin `POST /vehicles` (`201` + `Location`); duplicate plate/VIN `409`; invalid data `422`; user `403`.
 - [ ] **AC-V2** `GET /vehicles` and `GET /vehicles/{id}` for any authenticated user; pagination and filters; soft-deleted hidden; `404` unknown.
 - [ ] **AC-V3** Admin `PATCH /vehicles/{id}` (`200`), conflicts `409`, user `403`.
 - [ ] **AC-V4** Admin `DELETE /vehicles/{id}` soft-deletes (`204`); `409` with active/reserved rentals; later `GET` is `404`.
@@ -283,3 +283,4 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: Admins may reset another user's password via `PATCH /users/{id}` without `current_password`.
 - 2026-11-21: `DELETE /users/{id}` for a user whose rentals are all `completed`/`cancelled` returns `409` (`user_has_rental_history`) rather than silently deactivating; the admin deactivates via `PATCH`. Reason: a `204` that does not delete would be surprising, and section 6.2 allows hard delete only without rental history.
 - 2026-11-21: `create-admin` never modifies an existing user. If `ADMIN_EMAIL` belongs to a user who is not an active admin it exits `1` with a message, instead of promoting or reactivating that account. It prints neither the email nor the password.
+- 2026-11-21: VINs, when given, must be 17 characters (A-Z without I/O/Q, and digits) and are stored uppercase. `daily_rate` accepts at most 8 digits with 2 decimals and is serialised as a string (e.g. `"49.90"`) to avoid float rounding.

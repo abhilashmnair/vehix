@@ -10,6 +10,7 @@ from app.models import Rental, RentalStatus, User, UserRole
 from app.schemas.common import PageParams
 from app.schemas.user import UserAdminUpdate, UserCreate, UserSelfUpdate
 from app.security import hash_password, verify_password
+from app.services.db_errors import violated_constraint
 from app.services.pagination import paginate
 
 EMAIL_UNIQUE_CONSTRAINT = "uq_users_email_lower"
@@ -24,9 +25,7 @@ def flush_user(session: Session) -> None:
     try:
         session.flush()
     except IntegrityError as exc:
-        if getattr(getattr(exc.orig, "diag", None), "constraint_name", None) == (
-            EMAIL_UNIQUE_CONSTRAINT
-        ):
+        if violated_constraint(exc) == EMAIL_UNIQUE_CONSTRAINT:
             raise email_conflict() from exc
         raise
 
