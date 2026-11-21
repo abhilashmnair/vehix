@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.errors import ConflictError, NotFoundError
 from app.models import Rental, RentalStatus, Vehicle, VehicleStatus
 from app.schemas.common import PageParams
-from app.schemas.vehicle import VehicleCreate, VehicleFilters
+from app.schemas.vehicle import VehicleCreate, VehicleFilters, VehicleUpdate
 from app.services.db_errors import violated_constraint
 from app.services.pagination import paginate
 
@@ -70,4 +70,14 @@ def get_vehicle(session: Session, vehicle_id: uuid.UUID) -> Vehicle:
     vehicle = session.get(Vehicle, vehicle_id)
     if vehicle is None or vehicle.deleted_at is not None:
         raise NotFoundError("Vehicle not found.")
+    return vehicle
+
+
+def update_vehicle(session: Session, vehicle_id: uuid.UUID, data: VehicleUpdate) -> Vehicle:
+    vehicle = get_vehicle(session, vehicle_id)
+    for name in data.model_fields_set:
+        value = getattr(data, name)
+        setattr(vehicle, name, value.value if isinstance(value, VehicleStatus) else value)
+    flush_vehicle(session)
+    session.refresh(vehicle)
     return vehicle

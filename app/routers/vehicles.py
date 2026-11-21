@@ -7,7 +7,7 @@ from app.db import SessionDep
 from app.errors import error_responses
 from app.routers import API_PREFIX
 from app.schemas.common import Page, PageParamsDep
-from app.schemas.vehicle import VehicleCreate, VehicleFilters, VehicleRead
+from app.schemas.vehicle import VehicleCreate, VehicleFilters, VehicleRead, VehicleUpdate
 from app.security import AdminUser, CurrentUser
 from app.services import vehicles as vehicles_service
 
@@ -57,3 +57,15 @@ def list_vehicles(
 )
 def read_vehicle(vehicle_id: uuid.UUID, _user: CurrentUser, session: SessionDep) -> VehicleRead:
     return VehicleRead.model_validate(vehicles_service.get_vehicle(session, vehicle_id))
+
+
+@router.patch(
+    "/{vehicle_id}",
+    response_model=VehicleRead,
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 403, 404, 409, 422),
+)
+def update_vehicle(
+    vehicle_id: uuid.UUID, body: VehicleUpdate, _admin: AdminUser, session: SessionDep
+) -> VehicleRead:
+    return VehicleRead.model_validate(vehicles_service.update_vehicle(session, vehicle_id, body))
