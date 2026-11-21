@@ -26,22 +26,23 @@ Requirements live in [`docs/PROJECT.md`](docs/PROJECT.md). Contributor and agent
 ## Configuration reference
 
 The app reads these from the process environment, or from `.env` in the repo root when the file
-exists. A real environment variable wins over `.env`. The app, the CLI and the tests refuse to
-start if a required variable is missing, empty or still `CHANGE_ME`, and they report variable
-**names** only, never values.
+exists. A real environment variable wins over `.env`. A command refuses to start if a variable
+it needs is missing, empty or still `CHANGE_ME`, and it reports variable **names** only, never
+values.
 
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_NAME` | yes | Where the application database lives |
-| `DB_PASSWORD` | yes | Database password |
-| `JWT_SECRET` | yes | Signing key for access tokens. Use a long random value (at least 32 bytes) |
-| `JWT_EXPIRE_MINUTES` | yes | Access token lifetime |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | yes | First admin, used by `create-admin`. The password must be 12-128 characters |
-| `TEST_DB_NAME` | yes | Database the tests use. Production never uses it, but it must still be set to a real-looking value such as `vehicles_test` |
-| `CORS_ORIGINS` | no | Comma-separated allowed browser origins. CORS is off when unset |
-| `DOCS_ENABLED` | no | Default `true`. `false` removes `/docs`, `/redoc` and `/openapi.json` |
+| Variable | Needed by | Notes |
+|----------|-----------|-------|
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_NAME` | server, migrations | Where the application database lives |
+| `DB_PASSWORD` | server, migrations | Database password |
+| `JWT_SECRET` | server | Signing key for access tokens. Use a long random value (at least 32 bytes) |
+| `JWT_EXPIRE_MINUTES` | server | Access token lifetime |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | `create-admin` only | First admin. The password must be 12-128 characters. Not needed to serve requests |
+| `TEST_DB_NAME` | tests only | Database the tests use. Not needed outside development |
+| `CORS_ORIGINS` | optional | Comma-separated allowed browser origins. CORS is off when unset |
+| `DOCS_ENABLED` | optional | Default `true`. `false` removes `/docs`, `/redoc` and `/openapi.json` |
 
-`python -m app.cli check-env` validates the configuration without printing any value.
+`python -m app.cli check-env` validates the variables the server needs without printing any
+value. An optional variable that is present must still not be empty or `CHANGE_ME`.
 
 ## Development
 
@@ -113,7 +114,7 @@ creates a test database, `--reload` is for editing code, and `/docs` should not 
 
 ### What you need
 
-- A Linux host or container platform with Python 3.12+ and `git`.
+- Either a Linux host with Python 3.12+ and `git`, or a container runtime (Podman or Docker).
 - A PostgreSQL database the app host can reach (managed service or your own server).
 - A reverse proxy or load balancer that terminates HTTPS (Caddy, nginx, a cloud load balancer).
 - A way to store secrets: your platform's secret store, or an env file readable only by the
@@ -139,7 +140,11 @@ create it. If your provider restricts extensions, have an administrator run it o
 Only the application host should be able to reach the database port. Do not expose it to the
 internet.
 
-### 2. Install the application
+### 2. Get the application
+
+Choose one. Every later step shows both variants.
+
+**Option A: directly on a host (Python virtualenv)**
 
 ```bash
 git clone https://github.com/abhilashmnair/vehix.git /opt/vehix
@@ -149,12 +154,28 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt     # production dependencies only
 ```
 
+**Option B: container image**
+
+The root `Dockerfile` builds a small image that runs as an unprivileged user and contains no
+secrets and no `.env` (`.dockerignore` keeps them out). `--format docker` keeps the image's
+health check, which Podman's default format drops:
+
+```bash
+git clone https://github.com/abhilashmnair/vehix.git && cd vehix
+git checkout <release-tag-or-commit>
+podman build --format docker -t vehix-api .     # or: docker build -t vehix-api .
+```
+
 ### 3. Configure
 
 Set the variables from the [configuration reference](#configuration-reference) through your
-platform's secret store, or in an env file that only the service user can read (for example
-`/etc/vehix/vehix.env`, owner = service user, mode `600`). There is no need to create a `.env`
-file inside the repo.
+platform's secret store, or in a file that only the service user can read (for example
+`/etc/vehix/vehix.env`, owner = service user, mode `600`). Use plain `KEY=value` lines without
+quotes. The same file works for systemd (`EnvironmentFile`) and for containers (`--env-file`).
+There is no need to create a `.env` file inside the repo.
+
+With Option A, load the file into your shell before running the commands in steps 3 and 4 (the
+systemd unit in step 5 loads it by itself): `set -a; . /etc/vehix/vehix.env; set +a`.
 
 Production values to set:
 
@@ -163,27 +184,39 @@ Production values to set:
   `python -c "import secrets; print(secrets.token_urlsafe(48))"` and store the result straight
   in your secret store.
 - `JWT_EXPIRE_MINUTES`: keep it short (the default of 30 is a sensible start).
-- `ADMIN_EMAIL` and `ADMIN_PASSWORD`: your first admin. Use a strong, unique password.
 - `DOCS_ENABLED=false`.
 - `CORS_ORIGINS`: only the exact origins of your front end, if a browser app calls the API.
   Leave it unset if there is none.
-- `TEST_DB_NAME`: required by the settings loader but never used. Set it to `vehicles_test`.
+
+`ADMIN_EMAIL` and `ADMIN_PASSWORD` are needed only for the one-off `create-admin` step below,
+and `TEST_DB_NAME` is never needed in production.
 
 Check the result. This prints variable names only:
 
 ```bash
-.venv/bin/python -m app.cli check-env
+.venv/bin/python -m app.cli check-env                                    # Option A
+podman run --rm --env-file /etc/vehix/vehix.env vehix-api python -m app.cli check-env   # Option B
 ```
-
-The `ADMIN_*` variables stay required for the app to start, even after the admin exists.
 
 ### 4. Create the schema and the first admin
 
-Run these once per release, before starting the new version:
+Run the migration once per release, before starting the new version:
 
 ```bash
-.venv/bin/alembic upgrade head
-.venv/bin/python -m app.cli create-admin
+.venv/bin/alembic upgrade head                                                # Option A
+podman run --rm --env-file /etc/vehix/vehix.env vehix-api alembic upgrade head   # Option B
+```
+
+Then create the first admin. `ADMIN_EMAIL` and `ADMIN_PASSWORD` (a strong, unique password of
+12-128 characters) are needed for this command only. Type them into your shell so they are
+never written to a file or to your command history, and pass them by name:
+
+```bash
+read -r ADMIN_EMAIL; read -rs ADMIN_PASSWORD; export ADMIN_EMAIL ADMIN_PASSWORD
+.venv/bin/python -m app.cli create-admin                                         # Option A
+podman run --rm --env-file /etc/vehix/vehix.env -e ADMIN_EMAIL -e ADMIN_PASSWORD \
+  vehix-api python -m app.cli create-admin                                       # Option B
+unset ADMIN_EMAIL ADMIN_PASSWORD
 ```
 
 `create-admin` is safe to repeat. It never changes an existing user. After your first login,
@@ -191,7 +224,21 @@ change the admin password with `PATCH /api/v1/users/me` (it requires `current_pa
 
 ### 5. Run the server
 
-Bind to localhost and let the reverse proxy face the internet:
+**Option B (container):** publish the port on localhost only and let the reverse proxy face the
+internet. If the proxy runs on another machine, publish on that interface and set
+`FORWARDED_ALLOW_IPS` to the proxy's address.
+
+```bash
+podman run -d --name vehix-api --restart unless-stopped \
+  --env-file /etc/vehix/vehix.env -p 127.0.0.1:8000:8000 vehix-api
+```
+
+If the database runs on the container host, set `DB_HOST` to `host.containers.internal`
+(Podman) or `host.docker.internal` (Docker). The image runs one process. To scale, run more
+containers, or replace the command: add
+`uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --workers 4` after `vehix-api`.
+
+**Option A (host):** bind to localhost and let the reverse proxy face the internet:
 
 ```bash
 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 \
@@ -218,8 +265,9 @@ WantedBy=multi-user.target
 ```
 
 Then `systemctl daemon-reload && systemctl enable --now vehix`. Adjust the user and paths to
-your host. If you deploy with containers or another platform, run the same `uvicorn` command
-and give it the same environment variables.
+your host. On other platforms (Kubernetes, ECS, and so on), run the same image or the same
+`uvicorn` command with the same environment variables, and point the platform's health check at
+`/api/v1/health`.
 
 ### 6. Put HTTPS in front
 
@@ -263,7 +311,7 @@ reachable and `503` when it is not.
 ### Production checklist
 
 - [ ] Application database user is not a superuser, and the database port is not public
-- [ ] `JWT_SECRET`, `DB_PASSWORD` and `ADMIN_PASSWORD` are unique to production and stored in a secret store
+- [ ] `JWT_SECRET`, `DB_PASSWORD` and the admin password are unique to production and stored in a secret store, not in the repo or the image
 - [ ] `DOCS_ENABLED=false`, and `CORS_ORIGINS` lists only your real front end
 - [ ] The service runs as a non-root user and restarts on failure
 - [ ] HTTPS terminates at the proxy, and only the proxy is public
