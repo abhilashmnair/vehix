@@ -69,3 +69,13 @@ def update_vehicle(
     vehicle_id: uuid.UUID, body: VehicleUpdate, _admin: AdminUser, session: SessionDep
 ) -> VehicleRead:
     return VehicleRead.model_validate(vehicles_service.update_vehicle(session, vehicle_id, body))
+
+
+@router.delete(
+    "/{vehicle_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(401, 403, 404, 409, 422),
+)
+def delete_vehicle(vehicle_id: uuid.UUID, _admin: AdminUser, session: SessionDep) -> Response:
+    vehicles_service.delete_vehicle(session, vehicle_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

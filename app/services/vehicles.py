@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import exists, func, select
 from sqlalchemy.exc import IntegrityError
@@ -81,3 +82,23 @@ def update_vehicle(session: Session, vehicle_id: uuid.UUID, data: VehicleUpdate)
     flush_vehicle(session)
     session.refresh(vehicle)
     return vehicle
+
+
+def delete_vehicle(session: Session, vehicle_id: uuid.UUID) -> None:
+    """Soft delete. Refused (409) while the vehicle has reserved or active rentals."""
+    vehicle = get_vehicle(session, vehicle_id)
+    has_open_rentals = session.scalar(
+        select(
+            exists().where(
+                Rental.vehicle_id == vehicle.id,
+                Rental.status.in_([RentalStatus.RESERVED.value, RentalStatus.ACTIVE.value]),
+            )
+        )
+    )
+    if has_open_rentals:
+        raise ConflictError(
+            "Vehicle has reserved or active rentals and cannot be deleted.",
+            code="vehicle_has_active_rentals",
+        )
+    vehicle.deleted_at = datetime.now(UTC)
+    session.flush()

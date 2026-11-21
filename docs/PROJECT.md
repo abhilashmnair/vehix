@@ -241,7 +241,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-V1** Admin `POST /vehicles` (`201` + `Location`); duplicate plate/VIN `409`; invalid data `422`; user `403`.
 - [x] **AC-V2** `GET /vehicles` and `GET /vehicles/{id}` for any authenticated user; pagination and filters; soft-deleted hidden; `404` unknown.
 - [x] **AC-V3** Admin `PATCH /vehicles/{id}` (`200`), conflicts `409`, user `403`.
-- [ ] **AC-V4** Admin `DELETE /vehicles/{id}` soft-deletes (`204`); `409` with active/reserved rentals; later `GET` is `404`.
+- [x] **AC-V4** Admin `DELETE /vehicles/{id}` soft-deletes (`204`); `409` with active/reserved rentals; later `GET` is `404`.
 
 ### Rentals
 - [ ] **AC-R1** `POST /rentals` creates for self (`201` + `Location`), server-computed `total_price`; `422` for invalid dates; `409` for non-rentable vehicle; `404` for unknown/deleted vehicle; user cannot create for others (`403`); admin can.
