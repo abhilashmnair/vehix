@@ -252,7 +252,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-R6** Admin `DELETE /rentals/{id}` (`204`); user `403`.
 
 ### Hardening
-- [ ] **AC-H1** Permission matrix test: a parametrized test hits every endpoint as anonymous/user/admin and asserts the expected status from section 2.
+- [x] **AC-H1** Permission matrix test: a parametrized test hits every endpoint as anonymous/user/admin and asserts the expected status from section 2.
 - [ ] **AC-H2** `ruff`, `mypy`, and `pytest` all green from a fresh clone following section 7; `README` section or this file is accurate.
 
 ## 9. Global done conditions
