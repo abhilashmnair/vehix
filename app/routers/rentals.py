@@ -5,10 +5,11 @@ from fastapi import APIRouter, Query, Response, status
 
 from app.db import SessionDep
 from app.errors import error_responses
+from app.models import RentalStatus
 from app.routers import API_PREFIX
 from app.schemas.common import Page, PageParamsDep
 from app.schemas.rental import RentalCreate, RentalFilters, RentalRead, RentalUpdate
-from app.security import CurrentUser
+from app.security import AdminUser, CurrentUser
 from app.services import rentals as rentals_service
 
 router = APIRouter(prefix="/rentals", tags=["rentals"])
@@ -71,3 +72,36 @@ def update_rental(
     return RentalRead.model_validate(
         rentals_service.update_rental(session, current, rental_id, body)
     )
+
+
+@router.post(
+    "/{rental_id}/cancel",
+    response_model=RentalRead,
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 404, 409, 422),
+)
+def cancel_rental(rental_id: uuid.UUID, current: CurrentUser, session: SessionDep) -> RentalRead:
+    rental = rentals_service.transition_rental(session, current, rental_id, RentalStatus.CANCELLED)
+    return RentalRead.model_validate(rental)
+
+
+@router.post(
+    "/{rental_id}/activate",
+    response_model=RentalRead,
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 403, 404, 409, 422),
+)
+def activate_rental(rental_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> RentalRead:
+    rental = rentals_service.transition_rental(session, admin, rental_id, RentalStatus.ACTIVE)
+    return RentalRead.model_validate(rental)
+
+
+@router.post(
+    "/{rental_id}/complete",
+    response_model=RentalRead,
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 403, 404, 409, 422),
+)
+def complete_rental(rental_id: uuid.UUID, admin: AdminUser, session: SessionDep) -> RentalRead:
+    rental = rentals_service.transition_rental(session, admin, rental_id, RentalStatus.COMPLETED)
+    return RentalRead.model_validate(rental)

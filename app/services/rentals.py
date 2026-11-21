@@ -154,3 +154,31 @@ def update_rental(
     flush_rental(session)
     session.refresh(rental)
     return rental
+
+
+# State machine: reserved -> active -> completed; reserved|active -> cancelled.
+TRANSITIONS: dict[str, set[str]] = {
+    RentalStatus.RESERVED.value: {RentalStatus.ACTIVE.value, RentalStatus.CANCELLED.value},
+    RentalStatus.ACTIVE.value: {RentalStatus.COMPLETED.value, RentalStatus.CANCELLED.value},
+    RentalStatus.COMPLETED.value: set(),
+    RentalStatus.CANCELLED.value: set(),
+}
+
+
+def transition_rental(
+    session: Session, actor: User, rental_id: uuid.UUID, target: RentalStatus
+) -> Rental:
+    """Move a rental to `target` if the state machine allows it, else 409.
+
+    Cancelling is allowed for the owner and admins; activating and completing are admin-only
+    (enforced by the router dependency).
+    """
+    rental = get_rental(session, actor, rental_id)
+    if target.value not in TRANSITIONS[rental.status]:
+        raise ConflictError(
+            f"A {rental.status} rental cannot become {target.value}.", code="invalid_state"
+        )
+    rental.status = target.value
+    flush_rental(session)
+    session.refresh(rental)
+    return rental

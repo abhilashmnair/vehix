@@ -27,7 +27,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-R2 | Overlap protection | done |
 | AC-R3 | List/get rentals | done |
 | AC-R4 | Update rental | done |
-| AC-R5 | Cancel and state machine | pending |
+| AC-R5 | Cancel and state machine | done |
 | AC-R6 | Admin delete rental | pending |
 | AC-H1 | Permission matrix test | pending |
 | AC-H2 | Fresh-clone gate, README | pending |
