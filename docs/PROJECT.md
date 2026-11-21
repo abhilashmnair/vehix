@@ -230,7 +230,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 ### Auth and users
 - [x] **AC-A1** `POST /auth/login` succeeds with valid credentials; `401` for wrong password, unknown email, inactive user (identical message).
 - [x] **AC-A2** Protected routes return `401` without/with invalid/expired token; role and `is_active` re-checked from DB.
-- [ ] **AC-U1** `GET/PATCH /users/me` work; password change requires `current_password`; `role`/`is_active` change attempts return `403`; response never includes password data.
+- [x] **AC-U1** `GET/PATCH /users/me` work; password change requires `current_password`; `role`/`is_active` change attempts return `403`; response never includes password data.
 - [ ] **AC-U2** Admin `POST /users` (`201`), duplicate email (`409`), weak password/invalid email (`422`), non-admin (`403`).
 - [ ] **AC-U3** Admin `GET /users` (paginated) and `GET /users/{id}` (`200/404`); non-admin `403`.
 - [ ] **AC-U4** Admin `PATCH /users/{id}` incl. role/active changes; `404` unknown id; `409` email conflict.
@@ -276,3 +276,6 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: Case-insensitive email uniqueness uses a unique index on `lower(email)` (no `citext`), because the init script only installs `btree_gist`.
 - 2026-11-21: Alembic gets its database URL from `.env` via `app.db.get_engine`, never from `alembic.ini`. The test suite resets `vehicles_test` and migrates it to head once per session.
 - 2026-11-21: Validation errors (422) are wrapped in the same envelope as `{"error": {"code": "validation_error", "message": ..., "details": [{loc, msg, type}]}}`. Submitted input is never echoed, since it may hold passwords.
+- 2026-11-21: Wrong `current_password` on a password change returns `403` (`invalid_current_password`); a missing `current_password` returns `422`. Reason: the caller is authenticated, so `401` would imply a bad token.
+- 2026-11-21: `PATCH /users/me` accepts `role`/`is_active` in the schema only to refuse them with `403` (also for admins, per 6.3); any other unknown field is `422`. A refused request applies none of its changes.
+- 2026-11-21: Passwords are limited to 12-128 characters (upper bound guards argon2 against oversized input).

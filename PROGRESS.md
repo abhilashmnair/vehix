@@ -13,7 +13,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-F3 | Error envelope + handlers | done |
 | AC-A1 | `POST /auth/login` | done |
 | AC-A2 | Token auth dependencies, DB re-check | done |
-| AC-U1 | `/users/me` | pending |
+| AC-U1 | `/users/me` | done |
 | AC-U2 | Admin create user | pending |
 | AC-U3 | Admin list/get users | pending |
 | AC-U4 | Admin update user | pending |
