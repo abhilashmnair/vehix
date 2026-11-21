@@ -231,7 +231,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-A1** `POST /auth/login` succeeds with valid credentials; `401` for wrong password, unknown email, inactive user (identical message).
 - [x] **AC-A2** Protected routes return `401` without/with invalid/expired token; role and `is_active` re-checked from DB.
 - [x] **AC-U1** `GET/PATCH /users/me` work; password change requires `current_password`; `role`/`is_active` change attempts return `403`; response never includes password data.
-- [ ] **AC-U2** Admin `POST /users` (`201`), duplicate email (`409`), weak password/invalid email (`422`), non-admin (`403`).
+- [x] **AC-U2** Admin `POST /users` (`201`), duplicate email (`409`), weak password/invalid email (`422`), non-admin (`403`).
 - [ ] **AC-U3** Admin `GET /users` (paginated) and `GET /users/{id}` (`200/404`); non-admin `403`.
 - [ ] **AC-U4** Admin `PATCH /users/{id}` incl. role/active changes; `404` unknown id; `409` email conflict.
 - [ ] **AC-U5** Admin `DELETE /users/{id}` (`204`); `409` for user with active rentals or for the last admin; `404` unknown id.

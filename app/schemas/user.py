@@ -12,6 +12,8 @@ from pydantic import (
     model_validator,
 )
 
+from app.models import UserRole
+
 # Upper bound protects argon2 from huge inputs; the lower bound is the project minimum.
 Password = Annotated[str, Field(min_length=12, max_length=128)]
 FullName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -30,6 +32,18 @@ class UserRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+
+class UserCreate(BaseModel):
+    """POST /users (admin only)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: NormalizedEmail
+    full_name: FullName
+    password: Password
+    role: UserRole = UserRole.USER
+    is_active: bool = True
 
 
 class UserSelfUpdate(BaseModel):

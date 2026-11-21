@@ -14,7 +14,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-A1 | `POST /auth/login` | done |
 | AC-A2 | Token auth dependencies, DB re-check | done |
 | AC-U1 | `/users/me` | done |
-| AC-U2 | Admin create user | pending |
+| AC-U2 | Admin create user | done |
 | AC-U3 | Admin list/get users | pending |
 | AC-U4 | Admin update user | pending |
 | AC-U5 | Admin delete user | pending |
@@ -31,7 +31,3 @@ Branch: `feature/vehicle-management-backend`
 | AC-R6 | Admin delete rental | pending |
 | AC-H1 | Permission matrix test | pending |
 | AC-H2 | Fresh-clone gate, README | pending |
-
-## Notes
-
-- `db/Dockerfile` was moved from the repo root to match `PROJECT.md` section 7.

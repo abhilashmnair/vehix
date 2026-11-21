@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.errors import ConflictError, ForbiddenError
 from app.models import User
-from app.schemas.user import UserSelfUpdate
+from app.schemas.user import UserCreate, UserSelfUpdate
 from app.security import hash_password, verify_password
 
 EMAIL_UNIQUE_CONSTRAINT = "uq_users_email_lower"
@@ -40,6 +40,20 @@ def update_self(session: Session, user: User, data: UserSelfUpdate) -> User:
         user.email = data.email
     if data.password is not None:
         user.password_hash = hash_password(data.password)
+    flush_user(session)
+    session.refresh(user)
+    return user
+
+
+def create_user(session: Session, data: UserCreate) -> User:
+    user = User(
+        email=data.email,
+        full_name=data.full_name,
+        password_hash=hash_password(data.password),
+        role=data.role.value,
+        is_active=data.is_active,
+    )
+    session.add(user)
     flush_user(session)
     session.refresh(user)
     return user

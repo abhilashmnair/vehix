@@ -1,9 +1,7 @@
 from fastapi import FastAPI
 
 from app.errors import register_exception_handlers
-from app.routers import auth, health, users
-
-API_PREFIX = "/api/v1"
+from app.routers import API_PREFIX, auth, health, users
 
 
 def create_app() -> FastAPI:
