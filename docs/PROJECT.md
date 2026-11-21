@@ -234,7 +234,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-U2** Admin `POST /users` (`201`), duplicate email (`409`), weak password/invalid email (`422`), non-admin (`403`).
 - [x] **AC-U3** Admin `GET /users` (paginated) and `GET /users/{id}` (`200/404`); non-admin `403`.
 - [x] **AC-U4** Admin `PATCH /users/{id}` incl. role/active changes; `404` unknown id; `409` email conflict.
-- [ ] **AC-U5** Admin `DELETE /users/{id}` (`204`); `409` for user with active rentals or for the last admin; `404` unknown id.
+- [x] **AC-U5** Admin `DELETE /users/{id}` (`204`); `409` for user with active rentals or for the last admin; `404` unknown id.
 - [ ] **AC-U6** CLI `create-admin` is idempotent and tested.
 
 ### Vehicles
@@ -281,3 +281,4 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: Passwords are limited to 12-128 characters (upper bound guards argon2 against oversized input).
 - 2026-11-21: The last-active-admin rule (6.3) is enforced for any target user, not only the caller: no request may leave the system without an active admin (`409`, code `last_admin`). The active admins are locked with `FOR UPDATE` during the check.
 - 2026-11-21: Admins may reset another user's password via `PATCH /users/{id}` without `current_password`.
+- 2026-11-21: `DELETE /users/{id}` for a user whose rentals are all `completed`/`cancelled` returns `409` (`user_has_rental_history`) rather than silently deactivating; the admin deactivates via `PATCH`. Reason: a `204` that does not delete would be surprising, and section 6.2 allows hard delete only without rental history.

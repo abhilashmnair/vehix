@@ -2,6 +2,8 @@ import secrets
 import uuid
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.config import EnvConfigError, Settings, get_settings, validate_env
 from app.db import get_engine
 from app.main import create_app
-from app.models import User, UserRole
+from app.models import Rental, User, UserRole, Vehicle
 from app.security import create_access_token, hash_password
 from tests.helpers import upgrade
 
@@ -119,3 +121,53 @@ def admin_token(admin: UserCred) -> str:
 @pytest.fixture
 def user_token(user: UserCred) -> str:
     return create_access_token(user.id, user.role)[0]
+
+
+VehicleFactory = Callable[..., uuid.UUID]
+RentalFactory = Callable[..., uuid.UUID]
+
+
+@pytest.fixture
+def vehicle_factory(test_engine: Engine) -> VehicleFactory:
+    def create(**overrides: object) -> uuid.UUID:
+        values: dict[str, object] = {
+            "license_plate": f"T{secrets.token_hex(3).upper()}",
+            "make": "Toyota",
+            "model": "Corolla",
+            "year": 2022,
+            "daily_rate": Decimal("50.00"),
+            "status": "available",
+        }
+        values.update(overrides)
+        with Session(test_engine) as session:
+            vehicle = Vehicle(**values)
+            session.add(vehicle)
+            session.commit()
+            return vehicle.id
+
+    return create
+
+
+@pytest.fixture
+def rental_factory(test_engine: Engine, vehicle_factory: VehicleFactory) -> RentalFactory:
+    """Insert a rental straight into the DB (bypassing the API), for arranging test state."""
+
+    def create(
+        user_id: uuid.UUID, vehicle_id: uuid.UUID | None = None, **overrides: object
+    ) -> uuid.UUID:
+        values: dict[str, object] = {
+            "user_id": user_id,
+            "vehicle_id": vehicle_id or vehicle_factory(),
+            "start_date": date(2030, 1, 10),
+            "end_date": date(2030, 1, 12),
+            "status": "reserved",
+            "total_price": Decimal("150.00"),
+        }
+        values.update(overrides)
+        with Session(test_engine) as session:
+            rental = Rental(**values)
+            session.add(rental)
+            session.commit()
+            return rental.id
+
+    return create

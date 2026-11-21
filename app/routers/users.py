@@ -83,3 +83,13 @@ def update_user(
     user_id: uuid.UUID, body: UserAdminUpdate, _admin: AdminUser, session: SessionDep
 ) -> UserRead:
     return UserRead.model_validate(users_service.update_user(session, user_id, body))
+
+
+@router.delete(
+    "/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(401, 403, 404, 409, 422),
+)
+def delete_user(user_id: uuid.UUID, _admin: AdminUser, session: SessionDep) -> Response:
+    users_service.delete_user(session, user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

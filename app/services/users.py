@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.errors import ConflictError, ForbiddenError, NotFoundError
-from app.models import User, UserRole
+from app.models import Rental, RentalStatus, User, UserRole
 from app.schemas.common import PageParams
 from app.schemas.user import UserAdminUpdate, UserCreate, UserSelfUpdate
 from app.security import hash_password, verify_password
@@ -106,3 +106,22 @@ def update_user(session: Session, user_id: uuid.UUID, data: UserAdminUpdate) -> 
     flush_user(session)
     session.refresh(user)
     return user
+
+
+def delete_user(session: Session, user_id: uuid.UUID) -> None:
+    user = get_user(session, user_id)
+    if user.role == UserRole.ADMIN.value and user.is_active:
+        ensure_not_last_admin(session, user)
+    statuses = set(session.scalars(select(Rental.status).where(Rental.user_id == user.id)))
+    if statuses & {RentalStatus.RESERVED.value, RentalStatus.ACTIVE.value}:
+        raise ConflictError(
+            "User has reserved or active rentals and cannot be deleted.",
+            code="user_has_active_rentals",
+        )
+    if statuses:
+        raise ConflictError(
+            "User has rental history and cannot be deleted; deactivate the user instead.",
+            code="user_has_rental_history",
+        )
+    session.delete(user)
+    session.flush()
