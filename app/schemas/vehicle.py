@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Annotated, Self
 
@@ -93,4 +93,24 @@ class VehicleUpdate(BaseModel):
         for name in self.model_fields_set - {"vin"}:
             if getattr(self, name) is None:
                 raise ValueError(f"{name} must not be null")
+        return self
+
+
+class VehicleFilters(BaseModel):
+    """Query filters for GET /vehicles.
+
+    `available_from`/`available_to` select vehicles that are rentable (status `available`) and
+    have no reserved/active rental touching that inclusive date range. Giving only one of them
+    means a single day.
+    """
+
+    status: VehicleStatus | None = None
+    make: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)] | None = None
+    available_from: date | None = None
+    available_to: date | None = None
+
+    @model_validator(mode="after")
+    def _check_range(self) -> Self:
+        if self.available_from and self.available_to and self.available_from > self.available_to:
+            raise ValueError("available_from must not be after available_to")
         return self
