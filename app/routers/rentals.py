@@ -1,9 +1,13 @@
-from fastapi import APIRouter, Response, status
+import uuid
+from typing import Annotated
+
+from fastapi import APIRouter, Query, Response, status
 
 from app.db import SessionDep
 from app.errors import error_responses
 from app.routers import API_PREFIX
-from app.schemas.rental import RentalCreate, RentalRead
+from app.schemas.common import Page, PageParamsDep
+from app.schemas.rental import RentalCreate, RentalFilters, RentalRead
 from app.security import CurrentUser
 from app.services import rentals as rentals_service
 
@@ -22,3 +26,34 @@ def create_rental(
     rental = rentals_service.create_rental(session, current, body)
     response.headers["Location"] = f"{API_PREFIX}/rentals/{rental.id}"
     return RentalRead.model_validate(rental)
+
+
+@router.get(
+    "",
+    response_model=Page[RentalRead],
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 422),
+)
+def list_rentals(
+    current: CurrentUser,
+    session: SessionDep,
+    params: PageParamsDep,
+    filters: Annotated[RentalFilters, Query()],
+) -> Page[RentalRead]:
+    rentals, total = rentals_service.list_rentals(session, current, filters, params)
+    return Page[RentalRead](
+        items=[RentalRead.model_validate(r) for r in rentals],
+        total=total,
+        limit=params.limit,
+        offset=params.offset,
+    )
+
+
+@router.get(
+    "/{rental_id}",
+    response_model=RentalRead,
+    status_code=status.HTTP_200_OK,
+    responses=error_responses(401, 404, 422),
+)
+def read_rental(rental_id: uuid.UUID, current: CurrentUser, session: SessionDep) -> RentalRead:
+    return RentalRead.model_validate(rentals_service.get_rental(session, current, rental_id))

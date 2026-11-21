@@ -25,7 +25,7 @@ Branch: `feature/vehicle-management-backend`
 | AC-V4 | Soft-delete vehicle | done |
 | AC-R1 | Create rental | done |
 | AC-R2 | Overlap protection | done |
-| AC-R3 | List/get rentals | pending |
+| AC-R3 | List/get rentals | done |
 | AC-R4 | Update rental | pending |
 | AC-R5 | Cancel and state machine | pending |
 | AC-R6 | Admin delete rental | pending |

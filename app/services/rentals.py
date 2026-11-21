@@ -2,13 +2,16 @@ import uuid
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.errors import ConflictError, ForbiddenError, NotFoundError, UnprocessableError
 from app.models import Rental, User, UserRole, Vehicle, VehicleStatus
-from app.schemas.rental import RentalCreate
+from app.schemas.common import PageParams
+from app.schemas.rental import RentalCreate, RentalFilters
 from app.services.db_errors import violated_constraint
+from app.services.pagination import paginate
 from app.services.vehicles import get_vehicle
 
 OVERLAP_CONSTRAINT = "ex_rentals_vehicle_no_overlap"
@@ -80,8 +83,24 @@ def create_rental(session: Session, actor: User, data: RentalCreate) -> Rental:
     return rental
 
 
-def get_rental(session: Session, rental_id: uuid.UUID) -> Rental:
+def list_rentals(
+    session: Session, actor: User, filters: RentalFilters, params: PageParams
+) -> tuple[list[Rental], int]:
+    stmt = select(Rental)
+    if actor.role != UserRole.ADMIN.value:
+        stmt = stmt.where(Rental.user_id == actor.id)
+    if filters.user_id is not None:
+        stmt = stmt.where(Rental.user_id == filters.user_id)
+    if filters.vehicle_id is not None:
+        stmt = stmt.where(Rental.vehicle_id == filters.vehicle_id)
+    if filters.status is not None:
+        stmt = stmt.where(Rental.status == filters.status.value)
+    return paginate(session, stmt.order_by(Rental.created_at, Rental.id), params)
+
+
+def get_rental(session: Session, actor: User, rental_id: uuid.UUID) -> Rental:
+    """Return the rental, or 404 if it does not exist or a non-admin does not own it."""
     rental = session.get(Rental, rental_id)
-    if rental is None:
+    if rental is None or (actor.role != UserRole.ADMIN.value and rental.user_id != actor.id):
         raise NotFoundError("Rental not found.")
     return rental

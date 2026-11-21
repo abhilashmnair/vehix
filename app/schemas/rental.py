@@ -5,6 +5,8 @@ from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
 
+from app.models import RentalStatus
+
 Notes = Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)]
 
 
@@ -39,3 +41,11 @@ class RentalCreate(BaseModel):
         if self.end_date < self.start_date:
             raise ValueError("end_date must not be before start_date")
         return self
+
+
+class RentalFilters(BaseModel):
+    """Query filters for GET /rentals. Non-admins only ever see their own rentals."""
+
+    user_id: uuid.UUID | None = None
+    vehicle_id: uuid.UUID | None = None
+    status: RentalStatus | None = None
