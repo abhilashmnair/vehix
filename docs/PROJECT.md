@@ -225,7 +225,7 @@ Work in order. Tick a box only when its tests pass, then commit and push to the 
 - [x] **AC-F0** Secrets handling: `.env` is git-ignored, `.env.example` has placeholders only, config uses `SecretStr`, `python -m app.cli check-env` reports missing/placeholder variable names without printing values, and a missing `.env` produces a clear "populate `.env`" error (tested).
 - [x] **AC-F1** Project scaffold, config from `.env`, `GET /health` returns `200`, DB connection works; pytest runs green against `vehicles_test`.
 - [x] **AC-F2** Alembic set up; initial migration creates `users`, `vehicles`, `rentals` with all constraints (including `btree_gist` exclusion); migration applies on an empty DB.
-- [ ] **AC-F3** Uniform error envelope and exception handlers (`401/403/404/409/422/500`) with tests.
+- [x] **AC-F3** Uniform error envelope and exception handlers (`401/403/404/409/422/500`) with tests.
 
 ### Auth and users
 - [ ] **AC-A1** `POST /auth/login` succeeds with valid credentials; `401` for wrong password, unknown email, inactive user (identical message).
@@ -275,3 +275,4 @@ Agents append decisions here when requirements were ambiguous (date, decision, r
 - 2026-11-21: Dev dependency `httpx2` replaces `httpx` (Starlette's TestClient deprecates `httpx`).
 - 2026-11-21: Case-insensitive email uniqueness uses a unique index on `lower(email)` (no `citext`), because the init script only installs `btree_gist`.
 - 2026-11-21: Alembic gets its database URL from `.env` via `app.db.get_engine`, never from `alembic.ini`. The test suite resets `vehicles_test` and migrates it to head once per session.
+- 2026-11-21: Validation errors (422) are wrapped in the same envelope as `{"error": {"code": "validation_error", "message": ..., "details": [{loc, msg, type}]}}`. Submitted input is never echoed, since it may hold passwords.
